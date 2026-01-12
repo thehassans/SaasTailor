@@ -52,14 +52,14 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [token]);
 
-  const login = async (endpoint, credentials) => {
+  const login = async (credentials) => {
     try {
-      const response = await api.post(endpoint, credentials);
-      const { token: newToken, user: userData } = response.data;
+      const response = await api.post('/auth/login', credentials);
+      const { token: newToken, user: userData, role } = response.data;
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
-      return { success: true, user: userData };
+      return { success: true, user: userData, role };
     } catch (error) {
       return { 
         success: false, 
@@ -67,10 +67,6 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
-
-  const adminLogin = (credentials) => login('/auth/admin/login', credentials);
-  const userLogin = (credentials) => login('/auth/user/login', credentials);
-  const workerLogin = (credentials) => login('/auth/worker/login', credentials);
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -100,9 +96,7 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       api,
-      adminLogin,
-      userLogin,
-      workerLogin,
+      login,
       logout,
       loginAsUser,
       updateUser,

@@ -2,16 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { Scissors, Shield, Store, Wrench, ChevronDown } from 'lucide-react';
+import { Scissors, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const { t, i18n } = useTranslation();
-  const { adminLogin, userLogin, workerLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   
-  const [loginType, setLoginType] = useState('user');
-  const [credentials, setCredentials] = useState({ email: '', phone: '', password: '' });
+  const [credentials, setCredentials] = useState({ identifier: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
@@ -27,20 +26,21 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    let result;
     try {
-      if (loginType === 'admin') {
-        result = await adminLogin({ email: credentials.email, password: credentials.password });
-        if (result.success) navigate('/admin/dashboard');
-      } else if (loginType === 'user') {
-        result = await userLogin({ phone: credentials.phone, password: credentials.password });
-        if (result.success) navigate('/user/dashboard');
+      const result = await login({ 
+        identifier: credentials.identifier, 
+        password: credentials.password 
+      });
+      
+      if (result.success) {
+        if (result.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (result.role === 'user') {
+          navigate('/user/dashboard');
+        } else if (result.role === 'worker') {
+          navigate('/worker/dashboard');
+        }
       } else {
-        result = await workerLogin({ phone: credentials.phone, password: credentials.password });
-        if (result.success) navigate('/worker/dashboard');
-      }
-
-      if (!result.success) {
         toast.error(result.error || t('auth.invalidCredentials'));
       }
     } catch (error) {
@@ -48,12 +48,6 @@ const LoginPage = () => {
     }
     setLoading(false);
   };
-
-  const loginTypes = [
-    { id: 'user', label: t('auth.loginAsUser'), icon: Store, color: 'primary' },
-    { id: 'worker', label: t('auth.loginAsWorker'), icon: Wrench, color: 'emerald' },
-    { id: 'admin', label: t('auth.loginAsAdmin'), icon: Shield, color: 'violet' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -98,62 +92,26 @@ const LoginPage = () => {
           <p className="text-gray-500 mt-1">Professional Tailoring Management</p>
         </div>
 
-        {/* Login Type Selector */}
-        <div className="flex gap-2 mb-6">
-          {loginTypes.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => setLoginType(type.id)}
-              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                loginType === type.id
-                  ? `border-${type.color}-500 bg-${type.color}-50`
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
-              }`}
-            >
-              <type.icon className={`w-5 h-5 ${loginType === type.id ? `text-${type.color}-600` : 'text-gray-400'}`} />
-              <span className={`text-xs font-medium ${loginType === type.id ? `text-${type.color}-700` : 'text-gray-600'}`}>
-                {type.id === 'user' ? 'Shop' : type.id === 'worker' ? 'Worker' : 'Admin'}
-              </span>
-            </button>
-          ))}
-        </div>
-
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-soft p-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">
-            {loginType === 'admin' ? t('auth.loginAsAdmin') : loginType === 'user' ? t('auth.loginAsUser') : t('auth.loginAsWorker')}
+            {t('auth.login')}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {loginType === 'admin' ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('auth.email')}
-                </label>
-                <input
-                  type="email"
-                  value={credentials.email}
-                  onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                  placeholder="admin@example.com"
-                  required
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('auth.phone')}
-                </label>
-                <input
-                  type="tel"
-                  value={credentials.phone}
-                  onChange={(e) => setCredentials({ ...credentials, phone: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                  placeholder="+1234567890"
-                  required
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('auth.email')} / {t('auth.phone')}
+              </label>
+              <input
+                type="text"
+                value={credentials.identifier}
+                onChange={(e) => setCredentials({ ...credentials, identifier: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                placeholder="admin@example.com or +1234567890"
+                required
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -172,13 +130,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 rounded-xl font-medium text-white transition-all ${
-                loginType === 'admin' 
-                  ? 'bg-violet-600 hover:bg-violet-700' 
-                  : loginType === 'worker'
-                  ? 'bg-emerald-600 hover:bg-emerald-700'
-                  : 'bg-primary-600 hover:bg-primary-700'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              className="w-full py-3 rounded-xl font-medium text-white transition-all bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
