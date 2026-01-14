@@ -99,7 +99,8 @@ router.post('/', async (req, res) => {
       paidAmount,
       description, 
       dueDate,
-      receiptNumber 
+      receiptNumber,
+      thawbType 
     } = req.body;
     
     const customer = await Customer.findOne({ 
@@ -122,6 +123,7 @@ router.post('/', async (req, res) => {
       userId: req.user._id,
       customerId,
       receiptNumber: finalReceiptNumber,
+      thawbType: thawbType || 'saudi',
       measurements: measurements || customer.measurements,
       quantity: quantity || 1,
       price,
@@ -164,7 +166,8 @@ router.put('/:id', async (req, res) => {
       paidAmount,
       description, 
       dueDate,
-      status 
+      status,
+      thawbType 
     } = req.body;
     
     const stitching = await Stitching.findOne({ 
@@ -182,6 +185,7 @@ router.put('/:id', async (req, res) => {
     if (paidAmount !== undefined) stitching.paidAmount = paidAmount;
     if (description !== undefined) stitching.description = description;
     if (dueDate !== undefined) stitching.dueDate = dueDate;
+    if (thawbType) stitching.thawbType = thawbType;
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();

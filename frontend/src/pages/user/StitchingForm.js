@@ -18,6 +18,16 @@ const ORDER_STATUSES = [
   { value: 'done', label: 'Done / جاهز', color: 'green' }
 ];
 
+const THAWB_TYPES = [
+  { value: 'saudi', label: 'Saudi / سعودي', labelAr: 'ثوب سعودي', color: 'emerald' },
+  { value: 'qatari', label: 'Qatari / قطري', labelAr: 'ثوب قطري', color: 'purple' },
+  { value: 'emirati', label: 'Emirati / إماراتي', labelAr: 'ثوب إماراتي', color: 'blue' },
+  { value: 'kuwaiti', label: 'Kuwaiti / كويتي', labelAr: 'ثوب كويتي', color: 'amber' },
+  { value: 'omani', label: 'Omani / عماني', labelAr: 'ثوب عماني', color: 'rose' },
+  { value: 'bahraini', label: 'Bahraini / بحريني', labelAr: 'ثوب بحريني', color: 'cyan' },
+  { value: 'yemeni', label: 'Yemeni / يمني', labelAr: 'ثوب يمني', color: 'orange' }
+];
+
 const StitchingForm = () => {
   const { t } = useTranslation();
   const { api, user } = useAuth();
@@ -40,6 +50,7 @@ const StitchingForm = () => {
     description: '',
     dueDate: '',
     status: 'pending',
+    thawbType: 'saudi',
     measurements: {}
   });
 
@@ -70,6 +81,7 @@ const StitchingForm = () => {
         description: stitch.description || '',
         dueDate: stitch.dueDate ? new Date(stitch.dueDate).toISOString().split('T')[0] : '',
         status: stitch.status || 'pending',
+        thawbType: stitch.thawbType || 'saudi',
         measurements: stitch.measurements || {}
       });
     } catch (error) {
@@ -249,6 +261,7 @@ const StitchingForm = () => {
         description: formData.description,
         dueDate: formData.dueDate || null,
         status: formData.status,
+        thawbType: formData.thawbType,
         measurements: formData.measurements
       };
 
@@ -299,7 +312,7 @@ const StitchingForm = () => {
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
               Back to Orders
             </Button>
-            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', measurements: {} }); }} className="w-full">
+            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', measurements: {} }); }} className="w-full">
               Create Another Order
             </Button>
           </div>
@@ -452,6 +465,74 @@ const StitchingForm = () => {
                 )}
               </div>
             )}
+
+            {/* Thawb Type Selector */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
+              <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100 mb-4">
+                Thawb Type / نوع الثوب *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {THAWB_TYPES.map((thawb) => {
+                  const isSelected = formData.thawbType === thawb.value;
+                  const colorClasses = {
+                    emerald: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 ring-emerald-500',
+                    purple: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-purple-500',
+                    blue: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-blue-500',
+                    amber: 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 ring-amber-500',
+                    rose: 'border-rose-500 bg-rose-50 dark:bg-rose-900/30 ring-rose-500',
+                    cyan: 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 ring-cyan-500',
+                    orange: 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 ring-orange-500',
+                  };
+                  const iconColors = {
+                    emerald: 'text-emerald-600 dark:text-emerald-400',
+                    purple: 'text-purple-600 dark:text-purple-400',
+                    blue: 'text-blue-600 dark:text-blue-400',
+                    amber: 'text-amber-600 dark:text-amber-400',
+                    rose: 'text-rose-600 dark:text-rose-400',
+                    cyan: 'text-cyan-600 dark:text-cyan-400',
+                    orange: 'text-orange-600 dark:text-orange-400',
+                  };
+                  return (
+                    <button
+                      key={thawb.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, thawbType: thawb.value })}
+                      className={`relative p-4 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] ${
+                        isSelected 
+                          ? `${colorClasses[thawb.color]} ring-2` 
+                          : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-500'
+                      }`}
+                    >
+                      {/* Thawb Icon/Image */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className={`w-12 h-16 flex items-center justify-center ${isSelected ? iconColors[thawb.color] : 'text-gray-400 dark:text-slate-500'}`}>
+                          <svg viewBox="0 0 40 60" fill="currentColor" className="w-full h-full">
+                            <path d="M20 0 L8 8 L8 20 L4 20 L4 26 L8 26 L8 58 L16 58 L16 40 L24 40 L24 58 L32 58 L32 26 L36 26 L36 20 L32 20 L32 8 Z" opacity="0.9"/>
+                            <circle cx="20" cy="12" r="3" fill="currentColor" opacity="0.6"/>
+                          </svg>
+                        </div>
+                        <div className="text-center">
+                          <p className={`text-xs font-semibold ${isSelected ? iconColors[thawb.color] : 'text-gray-700 dark:text-slate-200'}`}>
+                            {thawb.value.charAt(0).toUpperCase() + thawb.value.slice(1)}
+                          </p>
+                          <p className={`text-[10px] ${isSelected ? iconColors[thawb.color] : 'text-gray-500 dark:text-slate-400'}`}>
+                            {thawb.labelAr.split(' ')[1]}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Selected checkmark */}
+                      {isSelected && (
+                        <div className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${colorClasses[thawb.color]}`}>
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Price and Quantity */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
