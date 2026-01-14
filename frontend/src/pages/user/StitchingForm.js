@@ -19,13 +19,13 @@ const ORDER_STATUSES = [
 ];
 
 const THAWB_TYPES = [
-  { value: 'saudi', label: 'Saudi / سعودي', labelAr: 'ثوب سعودي', color: 'emerald' },
-  { value: 'qatari', label: 'Qatari / قطري', labelAr: 'ثوب قطري', color: 'purple' },
-  { value: 'emirati', label: 'Emirati / إماراتي', labelAr: 'ثوب إماراتي', color: 'blue' },
-  { value: 'kuwaiti', label: 'Kuwaiti / كويتي', labelAr: 'ثوب كويتي', color: 'amber' },
-  { value: 'omani', label: 'Omani / عماني', labelAr: 'ثوب عماني', color: 'rose' },
-  { value: 'bahraini', label: 'Bahraini / بحريني', labelAr: 'ثوب بحريني', color: 'cyan' },
-  { value: 'yemeni', label: 'Yemeni / يمني', labelAr: 'ثوب يمني', color: 'orange' }
+  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/images/thawbs/saudi.png' },
+  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/images/thawbs/qatari.png' },
+  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/images/thawbs/emirati.png' },
+  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/images/thawbs/kuwaiti.png' },
+  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/images/thawbs/omani.png' },
+  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/images/thawbs/bahraini.png' },
+  { value: 'yemeni', label: 'Yemeni', labelAr: 'يمني', image: '/images/thawbs/yemeni.png' }
 ];
 
 const StitchingForm = () => {
@@ -474,56 +474,50 @@ const StitchingForm = () => {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {THAWB_TYPES.map((thawb) => {
                   const isSelected = formData.thawbType === thawb.value;
-                  const colorClasses = {
-                    emerald: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 ring-emerald-500',
-                    purple: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-purple-500',
-                    blue: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-blue-500',
-                    amber: 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 ring-amber-500',
-                    rose: 'border-rose-500 bg-rose-50 dark:bg-rose-900/30 ring-rose-500',
-                    cyan: 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 ring-cyan-500',
-                    orange: 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 ring-orange-500',
-                  };
-                  const iconColors = {
-                    emerald: 'text-emerald-600 dark:text-emerald-400',
-                    purple: 'text-purple-600 dark:text-purple-400',
-                    blue: 'text-blue-600 dark:text-blue-400',
-                    amber: 'text-amber-600 dark:text-amber-400',
-                    rose: 'text-rose-600 dark:text-rose-400',
-                    cyan: 'text-cyan-600 dark:text-cyan-400',
-                    orange: 'text-orange-600 dark:text-orange-400',
-                  };
                   return (
                     <button
                       key={thawb.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, thawbType: thawb.value })}
-                      className={`relative p-4 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] ${
+                      className={`relative p-3 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                         isSelected 
-                          ? `${colorClasses[thawb.color]} ring-2` 
+                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 ring-2 ring-amber-500 shadow-md' 
                           : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-500'
                       }`}
                     >
-                      {/* Thawb Icon/Image */}
+                      {/* Thawb Image */}
                       <div className="flex flex-col items-center gap-2">
-                        <div className={`w-12 h-16 flex items-center justify-center ${isSelected ? iconColors[thawb.color] : 'text-gray-400 dark:text-slate-500'}`}>
-                          <svg viewBox="0 0 40 60" fill="currentColor" className="w-full h-full">
-                            <path d="M20 0 L8 8 L8 20 L4 20 L4 26 L8 26 L8 58 L16 58 L16 40 L24 40 L24 58 L32 58 L32 26 L36 26 L36 20 L32 20 L32 8 Z" opacity="0.9"/>
-                            <circle cx="20" cy="12" r="3" fill="currentColor" opacity="0.6"/>
-                          </svg>
+                        <div className="w-16 h-24 sm:w-20 sm:h-28 relative overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
+                          <img 
+                            src={thawb.image} 
+                            alt={thawb.label}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          {/* Fallback icon if image not found */}
+                          <div className="absolute inset-0 items-center justify-center text-gray-400 dark:text-slate-500 hidden">
+                            <svg viewBox="0 0 40 60" fill="currentColor" className="w-10 h-14">
+                              <path d="M20 0 L8 8 L8 20 L4 20 L4 26 L8 26 L8 58 L16 58 L16 40 L24 40 L24 58 L32 58 L32 26 L36 26 L36 20 L32 20 L32 8 Z" opacity="0.9"/>
+                              <circle cx="20" cy="12" r="3" fill="currentColor" opacity="0.6"/>
+                            </svg>
+                          </div>
                         </div>
                         <div className="text-center">
-                          <p className={`text-xs font-semibold ${isSelected ? iconColors[thawb.color] : 'text-gray-700 dark:text-slate-200'}`}>
-                            {thawb.value.charAt(0).toUpperCase() + thawb.value.slice(1)}
+                          <p className={`text-sm font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-slate-200'}`}>
+                            {thawb.label}
                           </p>
-                          <p className={`text-[10px] ${isSelected ? iconColors[thawb.color] : 'text-gray-500 dark:text-slate-400'}`}>
-                            {thawb.labelAr.split(' ')[1]}
+                          <p className={`text-xs ${isSelected ? 'text-amber-500 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
+                            {thawb.labelAr}
                           </p>
                         </div>
                       </div>
                       {/* Selected checkmark */}
                       {isSelected && (
-                        <div className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${colorClasses[thawb.color]}`}>
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
