@@ -70,7 +70,7 @@ const LoginPage = () => {
           preload="metadata"
           className="absolute inset-0 w-full h-full object-cover opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
         >
-          <source src="/videos/thawb.mp4" type="video/mp4" />
+          <source src="/videos/Thawb.mp4" type="video/mp4" />
         </video>
       )}
 
