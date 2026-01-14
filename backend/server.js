@@ -59,9 +59,16 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 
-// Health check
+// Health check with MongoDB status
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  const mongoState = mongoose.connection.readyState;
+  const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    mongodb: states[mongoState] || 'unknown',
+    mongoEnvSet: !!process.env.MONGODB_URI
+  });
 });
 
 // Serve frontend in production
@@ -78,13 +85,33 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/saas_tailor')
+// MongoDB connection with proper options for cloud hosting
+const mongoOptions = {
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 10,
+  retryWrites: true,
+};
+
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/saas_tailor', mongoOptions)
   .then(async () => {
     console.log('MongoDB connected successfully');
+    console.log('MongoDB URI:', process.env.MONGODB_URI ? 'Set from env' : 'Using default localhost');
     await initializeAdmin();
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err.message);
+    console.error('MONGODB_URI env exists:', !!process.env.MONGODB_URI);
+  });
+
+// MongoDB connection event handlers
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected, attempting reconnect...');
+});
 
 // Check subscriptions daily at midnight
 cron.schedule('0 0 * * *', () => {
