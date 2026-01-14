@@ -59,6 +59,7 @@ router.post('/login', async (req, res) => {
               phone: user.phone,
               logo: user.logo,
               language: user.language,
+              theme: user.theme,
               subscriptionType: user.subscriptionType,
               role: 'user'
             }
@@ -164,6 +165,7 @@ router.post('/user/login', async (req, res) => {
         phone: user.phone,
         logo: user.logo,
         language: user.language,
+        theme: user.theme,
         subscriptionType: user.subscriptionType,
         subscriptionEndDate: user.subscriptionEndDate,
         role: 'user'

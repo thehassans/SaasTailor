@@ -84,6 +84,7 @@ router.get('/profile', async (req, res) => {
         phone: req.user.phone,
         logo: req.user.logo,
         language: req.user.language,
+        theme: req.user.theme,
         subscriptionType: req.user.subscriptionType,
         subscriptionEndDate: req.user.subscriptionEndDate,
         receiptPrefix: req.user.receiptPrefix,

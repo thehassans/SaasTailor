@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { TrendingUp, Clock } from 'lucide-react';
+import SARIcon from '../../components/ui/SARIcon';
 
 const WorkerAmounts = () => {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ const WorkerAmounts = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <DollarSign className="w-8 h-8 text-emerald-500" />
+        <SARIcon className="w-8 h-8 text-emerald-500" />
         <h1 className="text-2xl font-bold text-gray-900">{t('nav.amounts')}</h1>
       </div>
 
@@ -38,7 +39,7 @@ const WorkerAmounts = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">{t('workers.totalEarnings')}</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">${data.summary?.totalEarnings || 0}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1 flex items-center gap-1">{data.summary?.totalEarnings || 0} <SARIcon className="w-6 h-6" /></p>
             </div>
             <div className="p-3 bg-violet-50 rounded-lg">
               <TrendingUp className="w-6 h-6 text-violet-600" />
@@ -49,10 +50,10 @@ const WorkerAmounts = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">{t('workers.totalPaid')}</p>
-              <p className="text-3xl font-bold text-emerald-600 mt-1">${data.summary?.totalPaid || 0}</p>
+              <p className="text-3xl font-bold text-emerald-600 mt-1 flex items-center gap-1">{data.summary?.totalPaid || 0} <SARIcon className="w-6 h-6" /></p>
             </div>
             <div className="p-3 bg-emerald-50 rounded-lg">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
+              <SARIcon className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
         </Card>
@@ -60,7 +61,7 @@ const WorkerAmounts = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">{t('workers.pendingAmount')}</p>
-              <p className="text-3xl font-bold text-amber-600 mt-1">${data.summary?.pendingAmount || 0}</p>
+              <p className="text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{data.summary?.pendingAmount || 0} <SARIcon className="w-6 h-6" /></p>
             </div>
             <div className="p-3 bg-amber-50 rounded-lg">
               <Clock className="w-6 h-6 text-amber-600" />
@@ -92,7 +93,7 @@ const WorkerAmounts = () => {
               {data.payments.map((payment) => (
                 <Tr key={payment._id}>
                   <Td>{new Date(payment.createdAt).toLocaleDateString()}</Td>
-                  <Td className="font-medium text-emerald-600">+${payment.amount}</Td>
+                  <Td className="font-medium text-emerald-600"><span className="inline-flex items-center gap-1">+{payment.amount} <SARIcon className="w-3 h-3" /></span></Td>
                   <Td className="capitalize">{payment.type?.replace('_', ' ')}</Td>
                   <Td className="text-gray-500">{payment.description || '-'}</Td>
                 </Tr>

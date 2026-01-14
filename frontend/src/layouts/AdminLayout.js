@@ -54,12 +54,12 @@ const AdminLayout = () => {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-          <div className="p-2 bg-primary-100 rounded-lg">
-            <Scissors className="w-6 h-6 text-primary-600" />
+          <div className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center">
+            <Scissors className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h1 className="font-semibold text-gray-900">{t('common.appName')}</h1>
-            <p className="text-xs text-gray-500">{t('admin.title')}</p>
+            <h1 className="font-bold text-gray-900">KHAYYAT OS</h1>
+            <p className="text-xs text-gray-500">Admin Panel</p>
           </div>
         </div>
 

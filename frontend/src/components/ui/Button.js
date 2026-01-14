@@ -2,11 +2,11 @@ import React from 'react';
 
 const variants = {
   primary: 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
+  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100',
   danger: 'bg-red-600 hover:bg-red-700 text-white',
   success: 'bg-emerald-600 hover:bg-emerald-700 text-white',
-  outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700',
-  ghost: 'hover:bg-gray-100 text-gray-600'
+  outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700 dark:border-slate-700 dark:hover:bg-slate-800/50 dark:text-slate-100',
+  ghost: 'hover:bg-gray-100 text-gray-600 dark:hover:bg-slate-800/50 dark:text-slate-300'
 };
 
 const sizes = {

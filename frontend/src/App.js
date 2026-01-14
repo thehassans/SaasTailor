@@ -36,6 +36,9 @@ import WorkerStitchings from './pages/worker/Stitchings';
 import WorkerAmountsPage from './pages/worker/Amounts';
 import WorkerSettings from './pages/worker/Settings';
 
+// Public Pages
+import TrackOrder from './pages/public/TrackOrder';
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading, isAuthenticated } = useAuth();
 
@@ -65,6 +68,9 @@ const AppRoutes = () => {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <Routes>
+        {/* Public Routes */}
+        <Route path="/track-order" element={<TrackOrder />} />
+        
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />

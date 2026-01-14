@@ -57,6 +57,11 @@ const userSchema = new mongoose.Schema({
     enum: ['en', 'ar', 'hi', 'ur', 'bn'],
     default: 'en'
   },
+  theme: {
+    type: String,
+    enum: ['light', 'dark'],
+    default: 'light'
+  },
   whatsappEnabled: {
     type: Boolean,
     default: false

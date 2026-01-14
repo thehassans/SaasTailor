@@ -155,6 +155,7 @@ const AdminUserForm = () => {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+966501234567"
                 required
               />
               <Input

@@ -12,7 +12,7 @@ export const Table = ({ children, className = '' }) => {
 
 export const Thead = ({ children }) => {
   return (
-    <thead className="bg-gray-50 border-b border-gray-100">
+    <thead className="bg-gray-50 dark:bg-slate-800/40 border-b border-gray-100 dark:border-slate-800">
       {children}
     </thead>
   );
@@ -20,7 +20,7 @@ export const Thead = ({ children }) => {
 
 export const Tbody = ({ children }) => {
   return (
-    <tbody className="divide-y divide-gray-100">
+    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
       {children}
     </tbody>
   );
@@ -29,7 +29,7 @@ export const Tbody = ({ children }) => {
 export const Tr = ({ children, className = '', onClick }) => {
   return (
     <tr 
-      className={`hover:bg-gray-50 transition-colors ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -39,7 +39,7 @@ export const Tr = ({ children, className = '', onClick }) => {
 
 export const Th = ({ children, className = '' }) => {
   return (
-    <th className={`px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider ${className}`}>
+    <th className={`px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ${className}`}>
       {children}
     </th>
   );
@@ -47,7 +47,7 @@ export const Th = ({ children, className = '' }) => {
 
 export const Td = ({ children, className = '' }) => {
   return (
-    <td className={`px-6 py-4 text-sm text-gray-700 ${className}`}>
+    <td className={`px-6 py-4 text-sm text-gray-700 dark:text-slate-200 ${className}`}>
       {children}
     </td>
   );

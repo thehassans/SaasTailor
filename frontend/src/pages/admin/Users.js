@@ -31,9 +31,11 @@ const AdminUsers = () => {
       if (filter.subscription) params.append('subscription', filter.subscription);
       
       const response = await api.get(`/admin/users?${params}`);
-      setUsers(response.data.users);
+      const data = response.data;
+      setUsers(Array.isArray(data) ? data : data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     }
     setLoading(false);
   };

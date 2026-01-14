@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { Users, UserPlus, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import SARIcon from '../../components/ui/SARIcon';
 
 const UserDashboard = () => {
   const { t } = useTranslation();
@@ -39,15 +40,15 @@ const UserDashboard = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-        <p className="text-gray-500 mt-1">{t('common.welcome')}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('dashboard.title')}</h1>
+        <p className="text-gray-500 dark:text-slate-400 mt-1">{t('common.welcome')}</p>
       </div>
 
       {/* Subscription Alert */}
       {data?.subscription?.daysRemaining <= 7 && data?.subscription?.type !== 'lifetime' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
-          <p className="text-amber-800">
+        <div className="bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-300" />
+          <p className="text-amber-800 dark:text-amber-200">
             {t('dashboard.subscriptionStatus')}: {data.subscription.daysRemaining} {t('dashboard.daysRemaining')}
           </p>
         </div>
@@ -74,9 +75,9 @@ const UserDashboard = () => {
           color="amber"
         />
         <StatCard
-          icon={DollarSign}
+          icon={() => <SARIcon className="w-6 h-6" />}
           label={t('dashboard.totalRevenue')}
-          value={`$${data?.stats?.totalRevenue?.toLocaleString() || 0}`}
+          value={<span className="flex items-center gap-1">{data?.stats?.totalRevenue?.toLocaleString() || 0} <SARIcon className="w-5 h-5" /></span>}
           color="violet"
         />
       </div>
@@ -85,10 +86,10 @@ const UserDashboard = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">{t('dashboard.inProgress')}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('dashboard.inProgress')}</p>
               <p className="text-3xl font-bold text-primary-600 mt-1">{data?.stats?.inProgressStitchings || 0}</p>
             </div>
-            <div className="p-3 bg-primary-50 rounded-lg">
+            <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
               <Clock className="w-6 h-6 text-primary-600" />
             </div>
           </div>
@@ -96,10 +97,10 @@ const UserDashboard = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">{t('common.completed')}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.completed')}</p>
               <p className="text-3xl font-bold text-emerald-600 mt-1">{data?.stats?.completedStitchings || 0}</p>
             </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
               <CheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
@@ -107,11 +108,11 @@ const UserDashboard = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">{t('common.pending')} Payments</p>
-              <p className="text-3xl font-bold text-amber-600 mt-1">${data?.stats?.pendingPayments?.toLocaleString() || 0}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.pending')} Payments</p>
+              <p className="text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{data?.stats?.pendingPayments?.toLocaleString() || 0} <SARIcon className="w-6 h-6" /></p>
             </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <DollarSign className="w-6 h-6 text-amber-600" />
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <SARIcon className="w-6 h-6 text-amber-600" />
             </div>
           </div>
         </Card>
@@ -120,7 +121,7 @@ const UserDashboard = () => {
       {/* Recent Orders */}
       <Card>
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">{t('dashboard.recentOrders')}</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.recentOrders')}</h2>
         </div>
         {data?.recentStitchings?.length > 0 ? (
           <Table>
@@ -140,13 +141,13 @@ const UserDashboard = () => {
                   <Td>{stitch.customerId?.name || '-'}</Td>
                   <Td>{stitch.workerId?.name || '-'}</Td>
                   <Td><StatusBadge status={stitch.status} /></Td>
-                  <Td>${stitch.price}</Td>
+                  <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
         ) : (
-          <div className="p-12 text-center text-gray-500">
+          <div className="p-12 text-center text-gray-500 dark:text-slate-400">
             {t('common.noData')}
           </div>
         )}

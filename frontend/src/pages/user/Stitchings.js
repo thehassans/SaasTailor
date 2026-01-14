@@ -7,12 +7,13 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { Plus, Search, UserPlus, Trash2 } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
+import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Stitchings = () => {
   const { t } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const [stitchings, setStitchings] = useState([]);
   const [workers, setWorkers] = useState([]);
@@ -35,10 +36,14 @@ const Stitchings = () => {
         api.get(`/stitchings?${params}`),
         api.get('/worker')
       ]);
-      setStitchings(stitchRes.data.stitchings);
-      setWorkers(workersRes.data.workers);
+      const stitchData = stitchRes.data;
+      const workerData = workersRes.data;
+      setStitchings(Array.isArray(stitchData) ? stitchData : stitchData.stitchings || []);
+      setWorkers(Array.isArray(workerData) ? workerData : workerData.workers || []);
     } catch (error) {
       console.error('Error:', error);
+      setStitchings([]);
+      setWorkers([]);
     }
     setLoading(false);
   };
@@ -75,10 +80,97 @@ const Stitchings = () => {
     }
   };
 
+  const handlePrintLabel = (stitch) => {
+    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/track-order?id=${stitch._id}`)}`;
+    const labelLang = user?.labelLanguage || 'both';
+    
+    const labels = {
+      customer: { en: 'Customer', ar: 'العميل' },
+      phone: { en: 'Phone', ar: 'الهاتف' },
+      quantity: { en: 'Quantity', ar: 'الكمية' },
+      price: { en: 'Price', ar: 'السعر' },
+      paid: { en: 'Paid', ar: 'المدفوع' },
+      balance: { en: 'Balance', ar: 'المتبقي' },
+      dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
+      status: { en: 'Status', ar: 'الحالة' },
+      scanToTrack: { en: 'Scan to track order', ar: 'امسح لتتبع الطلب' }
+    };
+    
+    const getLabel = (key) => {
+      if (labelLang === 'en') return labels[key].en;
+      if (labelLang === 'ar') return labels[key].ar;
+      return `${labels[key].en} / ${labels[key].ar}`;
+    };
+    
+    const statusLabels = {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      assigned: { en: 'Assigned', ar: 'تم التعيين' },
+      in_progress: { en: 'In Progress', ar: 'جاري العمل' },
+      completed: { en: 'Completed', ar: 'مكتمل' },
+      delivered: { en: 'Delivered', ar: 'تم التسليم' }
+    };
+    
+    const getStatusLabel = (status) => {
+      const s = statusLabels[status] || { en: status, ar: status };
+      if (labelLang === 'en') return s.en;
+      if (labelLang === 'ar') return s.ar;
+      return `${s.en} / ${s.ar}`;
+    };
+    
+    const balance = (parseFloat(stitch.price) || 0) - (parseFloat(stitch.paidAmount) || 0);
+    
+    const printWindow = window.open('', '_blank', 'width=350,height=600');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="${labelLang === 'ar' ? 'rtl' : 'ltr'}">
+      <head>
+        <title>Print Label</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; }
+          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+          .logo { max-width: 50px; max-height: 30px; margin-bottom: 4px; }
+          .shop-name { font-size: 14px; font-weight: bold; }
+          .receipt-no { font-size: 16px; font-weight: bold; margin: 8px 0; text-align: center; }
+          .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+          .label { color: #666; }
+          .value { font-weight: 600; }
+          .qr-section { text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #000; }
+          .qr-section img { width: 80px; height: 80px; }
+          .qr-text { font-size: 9px; color: #666; margin-top: 4px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoSrc ? `<img src="${logoSrc}" class="logo" />` : ''}
+          <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
+        </div>
+        <div class="receipt-no">#${stitch.receiptNumber}</div>
+        <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${stitch.customerId?.name || '-'}</span></div>
+        <div class="info-row"><span class="label">${getLabel('phone')}</span><span class="value">${stitch.customerId?.phone || '-'}</span></div>
+        <div class="info-row"><span class="label">${getLabel('quantity')}</span><span class="value">${stitch.quantity}</span></div>
+        <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${stitch.price} SAR</span></div>
+        <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${stitch.paidAmount || 0} SAR</span></div>
+        <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} SAR</span></div>
+        <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
+        <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
+        <div class="qr-section">
+          <img src="${qrCodeUrl}" alt="QR Code" />
+          <div class="qr-text">${getLabel('scanToTrack')}</div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('stitchings.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
         <Button onClick={() => navigate('/user/stitchings/new')} icon={Plus}>
           {t('stitchings.createOrder')}
         </Button>
@@ -87,19 +179,19 @@ const Stitchings = () => {
       <Card className="p-4">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('stitchings.receiptNumber')}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg"
+            className="px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100"
           >
             <option value="">All Status</option>
             <option value="pending">{t('stitchings.statusPending')}</option>
@@ -125,6 +217,7 @@ const Stitchings = () => {
                 <Th>{t('stitchings.worker')}</Th>
                 <Th>{t('stitchings.quantity')}</Th>
                 <Th>{t('stitchings.price')}</Th>
+                <Th>Payment</Th>
                 <Th>{t('common.status')}</Th>
                 <Th>{t('common.actions')}</Th>
               </Tr>
@@ -135,30 +228,71 @@ const Stitchings = () => {
                   <Td className="font-medium">{stitch.receiptNumber}</Td>
                   <Td>
                     <div>
-                      <p>{stitch.customerId?.name || '-'}</p>
-                      <p className="text-xs text-gray-500">{stitch.customerId?.phone}</p>
+                      <p className="font-medium">{stitch.customerName || stitch.customerId?.name || '-'}</p>
+                      {stitch.orderFor && stitch.orderFor !== (stitch.customerName || stitch.customerId?.name) && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">For: {stitch.orderFor}</p>
+                      )}
                     </div>
                   </Td>
                   <Td>
                     {stitch.workerId ? (
-                      <span className="text-emerald-600">{stitch.workerId.name}</span>
+                      <button
+                        onClick={() => setAssignModal({ open: true, stitching: stitch })}
+                        className="group flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg transition-all cursor-pointer"
+                        title="Click to change worker"
+                      >
+                        <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">{stitch.workerId.name?.charAt(0)}</span>
+                        </div>
+                        <span className="text-emerald-700 dark:text-emerald-300 font-medium text-sm">{stitch.workerId.name}</span>
+                      </button>
                     ) : (
                       <button
                         onClick={() => setAssignModal({ open: true, stitching: stitch })}
-                        className="text-primary-600 hover:underline flex items-center gap-1"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-lg transition-all"
                       >
-                        <UserPlus className="w-4 h-4" />
-                        {t('stitchings.assignWorker')}
+                        <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-300" />
+                        <span className="text-primary-600 dark:text-primary-300 font-medium text-sm">{t('stitchings.assignWorker')}</span>
                       </button>
                     )}
                   </Td>
                   <Td>{stitch.quantity}</Td>
-                  <Td>${stitch.price}</Td>
+                  <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
+                  <Td>
+                    {(parseFloat(stitch.paidAmount) || 0) >= (parseFloat(stitch.price) || 0) ? (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
+                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-wide">PAID</span>
+                      </div>
+                    ) : (parseFloat(stitch.paidAmount) || 0) > 0 ? (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
+                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4m0 4h.01" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-wide">PARTIAL</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30">
+                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-wide">PENDING</span>
+                      </div>
+                    )}
+                  </Td>
                   <Td>
                     <select
                       value={stitch.status}
                       onChange={(e) => handleStatusChange(stitch._id, e.target.value)}
-                      className="text-sm bg-transparent border-none cursor-pointer"
+                      className="text-sm bg-transparent border-none cursor-pointer text-gray-700 dark:text-slate-200"
                     >
                       <option value="pending">{t('stitchings.statusPending')}</option>
                       <option value="assigned">{t('stitchings.statusAssigned')}</option>
@@ -168,19 +302,29 @@ const Stitchings = () => {
                     </select>
                   </Td>
                   <Td>
-                    <button
-                      onClick={() => handleDelete(stitch._id)}
-                      className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handlePrintLabel(stitch)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-lg"
+                        title="Print Label"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(stitch._id)}
+                        className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
         ) : (
-          <div className="p-12 text-center text-gray-500">{t('common.noData')}</div>
+          <div className="p-12 text-center text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
         )}
       </Card>
 
@@ -195,19 +339,19 @@ const Stitchings = () => {
             <button
               key={worker._id}
               onClick={() => handleAssign(worker._id)}
-              className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center gap-3 transition-colors"
+              className="w-full p-4 bg-gray-50 dark:bg-slate-800/40 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-3 transition-colors"
             >
-              <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                <span className="text-emerald-700 font-medium">{worker.name?.charAt(0)}</span>
+              <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                <span className="text-emerald-700 dark:text-emerald-200 font-medium">{worker.name?.charAt(0)}</span>
               </div>
               <div className="text-left">
                 <p className="font-medium">{worker.name}</p>
-                <p className="text-sm text-gray-500">{worker.phone}</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{worker.phone}</p>
               </div>
             </button>
           ))}
           {workers.filter(w => w.isActive).length === 0 && (
-            <p className="text-center text-gray-500 py-4">{t('common.noData')}</p>
+            <p className="text-center text-gray-500 dark:text-slate-400 py-4">{t('common.noData')}</p>
           )}
         </div>
       </Modal>

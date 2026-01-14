@@ -227,6 +227,7 @@ router.post('/users/:id/login-as', async (req, res) => {
         phone: user.phone,
         logo: user.logo,
         language: user.language,
+        theme: user.theme,
         role: 'user',
         isAdminSession: true
       }

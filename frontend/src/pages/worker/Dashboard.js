@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { Scissors, DollarSign, CheckCircle, Clock } from 'lucide-react';
+import { Scissors, CheckCircle, Clock } from 'lucide-react';
+import SARIcon from '../../components/ui/SARIcon';
 
 const WorkerDashboard = () => {
   const { t } = useTranslation();
@@ -56,15 +57,15 @@ const WorkerDashboard = () => {
           color="emerald"
         />
         <StatCard
-          icon={DollarSign}
+          icon={() => <SARIcon className="w-6 h-6" />}
           label={t('workers.totalEarnings')}
-          value={`$${data?.stats?.totalEarnings || 0}`}
+          value={<span className="flex items-center gap-1">{data?.stats?.totalEarnings || 0} <SARIcon className="w-5 h-5" /></span>}
           color="violet"
         />
         <StatCard
-          icon={DollarSign}
+          icon={() => <SARIcon className="w-6 h-6" />}
           label={t('workers.pendingAmount')}
-          value={`$${data?.stats?.pendingAmount || 0}`}
+          value={<span className="flex items-center gap-1">{data?.stats?.pendingAmount || 0} <SARIcon className="w-5 h-5" /></span>}
           color="amber"
         />
       </div>

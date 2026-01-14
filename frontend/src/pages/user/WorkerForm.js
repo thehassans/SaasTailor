@@ -72,10 +72,10 @@ const WorkerForm = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/user/workers')} className="p-2 hover:bg-gray-100 rounded-lg">
+        <button onClick={() => navigate('/user/workers')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
           {isEdit ? t('workers.editWorker') : t('workers.createWorker')}
         </h1>
       </div>
@@ -95,6 +95,7 @@ const WorkerForm = () => {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+966501234567"
                 required
               />
             </div>
@@ -109,7 +110,7 @@ const WorkerForm = () => {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 {t('workers.paymentType')}
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -118,11 +119,11 @@ const WorkerForm = () => {
                   onClick={() => setFormData({ ...formData, paymentType: 'per_stitching' })}
                   className={`p-4 rounded-xl border-2 text-center transition-all ${
                     formData.paymentType === 'per_stitching'
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
                   }`}
                 >
-                  <p className={`font-medium ${formData.paymentType === 'per_stitching' ? 'text-primary-700' : 'text-gray-700'}`}>
+                  <p className={`font-medium ${formData.paymentType === 'per_stitching' ? 'text-primary-700 dark:text-primary-200' : 'text-gray-700 dark:text-slate-200'}`}>
                     {t('workers.perStitching')}
                   </p>
                 </button>
@@ -131,11 +132,11 @@ const WorkerForm = () => {
                   onClick={() => setFormData({ ...formData, paymentType: 'salary' })}
                   className={`p-4 rounded-xl border-2 text-center transition-all ${
                     formData.paymentType === 'salary'
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
                   }`}
                 >
-                  <p className={`font-medium ${formData.paymentType === 'salary' ? 'text-primary-700' : 'text-gray-700'}`}>
+                  <p className={`font-medium ${formData.paymentType === 'salary' ? 'text-primary-700 dark:text-primary-200' : 'text-gray-700 dark:text-slate-200'}`}>
                     {t('workers.salary')}
                   </p>
                 </button>
@@ -158,9 +159,9 @@ const WorkerForm = () => {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                  className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-primary-600"
                 />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {t('common.active')}
                 </label>
               </div>

@@ -6,7 +6,8 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { DollarSign, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
+import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const WorkerAmounts = () => {
@@ -31,10 +32,14 @@ const WorkerAmounts = () => {
         api.get('/payments/summary'),
         api.get('/payments')
       ]);
-      setWorkers(summaryRes.data.workers);
-      setPayments(paymentsRes.data.payments);
+      const summaryData = summaryRes.data;
+      const paymentsData = paymentsRes.data;
+      setWorkers(Array.isArray(summaryData) ? summaryData : summaryData.workers || []);
+      setPayments(Array.isArray(paymentsData) ? paymentsData : paymentsData.payments || []);
     } catch (error) {
       console.error('Error:', error);
+      setWorkers([]);
+      setPayments([]);
     }
     setLoading(false);
   };
@@ -64,7 +69,7 @@ const WorkerAmounts = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <h1 className="text-2xl font-bold text-gray-900">{t('nav.workerAmounts')}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('nav.workerAmounts')}</h1>
 
       {/* Worker Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -73,26 +78,26 @@ const WorkerAmounts = () => {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-700 font-medium">{worker.name?.charAt(0)}</span>
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                    <span className="text-emerald-700 dark:text-emerald-200 font-medium">{worker.name?.charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{worker.name}</p>
-                    <p className="text-sm text-gray-500">{worker.phone}</p>
+                    <p className="font-medium text-gray-900 dark:text-slate-100">{worker.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{worker.phone}</p>
                   </div>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t('workers.totalEarnings')}:</span>
-                    <span className="font-medium">${worker.totalEarnings || 0}</span>
+                    <span className="text-gray-500 dark:text-slate-400">{t('workers.totalEarnings')}:</span>
+                    <span className="font-medium flex items-center gap-1">{worker.totalEarnings || 0} <SARIcon className="w-3 h-3" /></span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t('workers.totalPaid')}:</span>
-                    <span className="font-medium text-emerald-600">${worker.totalPaid || 0}</span>
+                    <span className="text-gray-500 dark:text-slate-400">{t('workers.totalPaid')}:</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">{worker.totalPaid || 0} <SARIcon className="w-3 h-3" /></span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t('workers.pendingAmount')}:</span>
-                    <span className="font-medium text-amber-600">${worker.pendingAmount || 0}</span>
+                    <span className="text-gray-500 dark:text-slate-400">{t('workers.pendingAmount')}:</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">{worker.pendingAmount || 0} <SARIcon className="w-3 h-3" /></span>
                   </div>
                 </div>
               </div>
@@ -111,8 +116,8 @@ const WorkerAmounts = () => {
 
       {/* Payment History */}
       <Card>
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">{t('workers.paymentHistory')}</h2>
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
+          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('workers.paymentHistory')}</h2>
         </div>
         {loading ? (
           <div className="flex items-center justify-center h-32">
@@ -132,15 +137,15 @@ const WorkerAmounts = () => {
               {payments.map((payment) => (
                 <Tr key={payment._id}>
                   <Td>{payment.workerId?.name}</Td>
-                  <Td className="font-medium text-emerald-600">${payment.amount}</Td>
-                  <Td className="text-gray-500">{payment.description || '-'}</Td>
+                  <Td className="font-medium text-emerald-600 flex items-center gap-1">{payment.amount} <SARIcon className="w-3 h-3" /></Td>
+                  <Td className="text-gray-500 dark:text-slate-400">{payment.description || '-'}</Td>
                   <Td>{new Date(payment.createdAt).toLocaleDateString()}</Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
         ) : (
-          <div className="p-12 text-center text-gray-500">{t('common.noData')}</div>
+          <div className="p-12 text-center text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
         )}
       </Card>
 
@@ -148,10 +153,10 @@ const WorkerAmounts = () => {
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={t('workers.sendPayment')}>
         <div className="space-y-4">
           {selectedWorker && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="font-medium">{selectedWorker.name}</p>
-              <p className="text-sm text-amber-600">
-                {t('workers.pendingAmount')}: ${selectedWorker.pendingAmount || 0}
+            <div className="bg-gray-50 dark:bg-slate-800/40 rounded-lg p-4">
+              <p className="font-medium text-gray-900 dark:text-slate-100">{selectedWorker.name}</p>
+              <p className="text-sm text-amber-600 dark:text-amber-300">
+                {t('workers.pendingAmount')}: {selectedWorker.pendingAmount || 0}
               </p>
             </div>
           )}

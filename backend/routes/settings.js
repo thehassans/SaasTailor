@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
         businessName: req.user.businessName,
         logo: req.user.logo,
         language: req.user.language,
+        theme: req.user.theme,
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
         whatsappEnabled: req.user.whatsappEnabled
@@ -27,10 +28,12 @@ router.get('/', async (req, res) => {
 // Update settings
 router.put('/', upload.single('logo'), async (req, res) => {
   try {
-    const { language, receiptPrefix } = req.body;
+    const { language, receiptPrefix, businessName, theme } = req.body;
     
     if (language) req.user.language = language;
     if (receiptPrefix) req.user.receiptPrefix = receiptPrefix;
+    if (businessName) req.user.businessName = businessName;
+    if (theme) req.user.theme = theme;
     if (req.file) req.user.logo = `/uploads/${req.file.filename}`;
     
     await req.user.save();
@@ -41,6 +44,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
         businessName: req.user.businessName,
         logo: req.user.logo,
         language: req.user.language,
+        theme: req.user.theme,
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
         whatsappEnabled: req.user.whatsappEnabled

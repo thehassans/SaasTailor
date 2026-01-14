@@ -52,6 +52,11 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [token]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('dark', user?.theme === 'dark');
+  }, [user?.theme]);
+
   const login = async (credentials) => {
     try {
       const response = await api.post('/auth/login', credentials);

@@ -1,52 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input, Textarea } from '../../components/ui/Input';
-import { ArrowLeft, Search } from 'lucide-react';
+import { Textarea } from '../../components/ui/Input';
+import { ArrowLeft, ChevronDown, Calendar, Printer, Users } from 'lucide-react';
+import MeasurementCard from '../../components/ui/MeasurementCard';
+import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
+
+const ORDER_STATUSES = [
+  { value: 'pending', label: 'Pending / قيد الانتظار', color: 'gray' },
+  { value: 'stitching', label: 'Stitching / الخياطة', color: 'blue' },
+  { value: 'finishing', label: 'Finishing / التشطيب', color: 'purple' },
+  { value: 'laundry', label: 'Laundry / الغسيل', color: 'cyan' },
+  { value: 'done', label: 'Done / جاهز', color: 'green' }
+];
 
 const StitchingForm = () => {
   const { t } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+  const printRef = useRef();
 
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedRelation, setSelectedRelation] = useState(null);
+  const [relationDropdownOpen, setRelationDropdownOpen] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState(null);
   const [formData, setFormData] = useState({
     quantity: 1,
-    price: 0,
-    paidAmount: 0,
+    price: '',
+    paidAmount: '',
     description: '',
     dueDate: '',
+    status: 'pending',
     measurements: {}
   });
 
   useEffect(() => {
+    fetchAllCustomers();
     if (isEdit) fetchStitching();
   }, [id]);
 
-  useEffect(() => {
-    if (searchQuery.length >= 2) searchCustomers();
-  }, [searchQuery]);
+  const fetchAllCustomers = async () => {
+    try {
+      const response = await api.get('/customers');
+      const data = response.data;
+      setAllCustomers(Array.isArray(data) ? data : data.customers || []);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const fetchStitching = async () => {
     try {
       const response = await api.get(`/stitchings/${id}`);
-      const stitch = response.data.stitching;
+      const stitch = response.data.stitching || response.data;
       setSelectedCustomer(stitch.customerId);
       setFormData({
         quantity: stitch.quantity,
-        price: stitch.price,
-        paidAmount: stitch.paidAmount || 0,
+        price: stitch.price || '',
+        paidAmount: stitch.paidAmount || '',
         description: stitch.description || '',
         dueDate: stitch.dueDate ? new Date(stitch.dueDate).toISOString().split('T')[0] : '',
+        status: stitch.status || 'pending',
         measurements: stitch.measurements || {}
       });
     } catch (error) {
@@ -55,23 +78,143 @@ const StitchingForm = () => {
     }
   };
 
-  const searchCustomers = async () => {
-    try {
-      const response = await api.get(`/customers/search?q=${searchQuery}`);
-      setCustomers(response.data.customers);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
+    setSelectedRelation(null); // Reset relation when customer changes
     setFormData({
       ...formData,
       measurements: customer.measurements || {}
     });
-    setSearchQuery('');
-    setCustomers([]);
+    setDropdownOpen(false);
+  };
+
+  const handleRelationSelect = (relation) => {
+    setSelectedRelation(relation);
+    // Load relation's measurements if available
+    if (relation?.measurements) {
+      setFormData({
+        ...formData,
+        measurements: relation.measurements
+      });
+    }
+    setRelationDropdownOpen(false);
+  };
+
+  const clearRelation = () => {
+    setSelectedRelation(null);
+    // Restore customer's measurements
+    setFormData({
+      ...formData,
+      measurements: selectedCustomer?.measurements || {}
+    });
+  };
+
+  const generateQRCode = (orderId) => {
+    const trackUrl = `${window.location.origin}/track-order?id=${orderId}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(trackUrl)}`;
+  };
+
+  const handlePrintLabel = () => {
+    if (!createdOrder) return;
+    
+    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
+    const qrCodeUrl = generateQRCode(createdOrder._id);
+    const trackUrl = `${window.location.origin}/track-order?id=${createdOrder._id}`;
+    const labelLang = user?.labelLanguage || 'both';
+    
+    // Bilingual labels
+    const labels = {
+      customer: { en: 'Customer', ar: 'العميل' },
+      phone: { en: 'Phone', ar: 'الهاتف' },
+      quantity: { en: 'Quantity', ar: 'الكمية' },
+      price: { en: 'Price', ar: 'السعر' },
+      paid: { en: 'Paid', ar: 'المدفوع' },
+      balance: { en: 'Balance', ar: 'المتبقي' },
+      dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
+      status: { en: 'Status', ar: 'الحالة' },
+      scanToTrack: { en: 'Scan to track order', ar: 'امسح لتتبع الطلب' }
+    };
+    
+    const getLabel = (key) => {
+      if (labelLang === 'en') return labels[key].en;
+      if (labelLang === 'ar') return labels[key].ar;
+      return `${labels[key].en} / ${labels[key].ar}`;
+    };
+    
+    const statusLabels = {
+      pending: { en: 'Pending', ar: 'قيد الانتظار' },
+      stitching: { en: 'Stitching', ar: 'الخياطة' },
+      finishing: { en: 'Finishing', ar: 'التشطيب' },
+      laundry: { en: 'Laundry', ar: 'الغسيل' },
+      done: { en: 'Done', ar: 'جاهز' }
+    };
+    
+    const getStatus = () => {
+      const status = formData.status || 'pending';
+      const s = statusLabels[status] || statusLabels.pending;
+      if (labelLang === 'en') return s.en;
+      if (labelLang === 'ar') return s.ar;
+      return `${s.en} / ${s.ar}`;
+    };
+    
+    // SAR Icon SVG - Official Saudi Riyal Symbol
+    const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
+    
+    const isRTL = labelLang === 'ar';
+    
+    const printWindow = window.open('', '_blank', 'width=320,height=650');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="${isRTL ? 'rtl' : 'ltr'}">
+      <head>
+        <title>Order Label</title>
+        <style>
+          @page { size: 80mm auto; margin: 2mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; }
+          .header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
+          .logo { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; }
+          .shop-name { font-size: 14px; font-weight: bold; }
+          .receipt-no { font-size: 16px; font-weight: bold; text-align: center; margin: 8px 0; }
+          .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+          .label { color: #666; font-size: 10px; }
+          .value { font-weight: 600; }
+          .qr-section { text-align: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #000; }
+          .qr-img { width: 80px; height: 80px; }
+          .qr-text { font-size: 9px; color: #666; margin-top: 4px; }
+          .status { text-align: center; padding: 6px; background: #f0f0f0; border-radius: 4px; margin: 8px 0; font-weight: bold; }
+          .no-logo { width: 40px; height: 40px; background: #e5e7eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>Logo</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
+          <div>
+            <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
+            <div style="font-size:10px;color:#666;">${user?.phone || ''}</div>
+          </div>
+        </div>
+        <div class="receipt-no">#${createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</div>
+        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${selectedCustomer?.name || '-'}</span></div>
+        <div class="row"><span class="label">${getLabel('phone')}:</span><span class="value">${selectedCustomer?.phone || '-'}</span></div>
+        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${formData.quantity}</span></div>
+        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${formData.price || 0} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${formData.paidAmount || 0} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(formData.price || 0) - (formData.paidAmount || 0)} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${formData.dueDate || '-'}</span></div>
+        <div class="status">${getLabel('status')}: ${getStatus()}</div>
+        <div class="qr-section">
+          <img src="${qrCodeUrl}" class="qr-img" alt="QR Code" />
+          <div class="qr-text">${getLabel('scanToTrack')}</div>
+          <div class="qr-text" style="font-size:8px;word-break:break-all;">${trackUrl}</div>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
   };
 
   const handleMeasurementChange = (field, value) => {
@@ -95,22 +238,30 @@ const StitchingForm = () => {
     try {
       const data = {
         customerId: selectedCustomer._id,
+        customerName: selectedCustomer.name,
+        relationId: selectedRelation?._id || null,
+        relationName: selectedRelation?.name || null,
+        relationType: selectedRelation?.type || null,
+        orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
         quantity: formData.quantity,
-        price: formData.price,
-        paidAmount: formData.paidAmount,
+        price: parseFloat(formData.price) || 0,
+        paidAmount: parseFloat(formData.paidAmount) || 0,
         description: formData.description,
         dueDate: formData.dueDate || null,
+        status: formData.status,
         measurements: formData.measurements
       };
 
       if (isEdit) {
         await api.put(`/stitchings/${id}`, data);
         toast.success('Updated');
+        navigate('/user/stitchings');
       } else {
-        await api.post('/stitchings', data);
-        toast.success('Order created');
+        const response = await api.post('/stitchings', data);
+        const order = response.data;
+        setCreatedOrder(order);
+        toast.success('Order created! You can print the label now.');
       }
-      navigate('/user/stitchings');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed');
     }
@@ -128,13 +279,42 @@ const StitchingForm = () => {
     { key: 'armhole', label: t('measurements.armhole') }
   ];
 
+  // If order created, show print option
+  if (createdOrder) {
+    return (
+      <div className="max-w-md mx-auto space-y-6 animate-fadeIn">
+        <Card className="p-8 text-center">
+          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">Order Created!</h2>
+          <p className="text-gray-500 dark:text-slate-400 mb-6">Receipt #{createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</p>
+          
+          <div className="space-y-3">
+            <Button onClick={handlePrintLabel} icon={Printer} className="w-full">
+              Print Label (80mm)
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
+              Back to Orders
+            </Button>
+            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', measurements: {} }); }} className="w-full">
+              Create Another Order
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/user/stitchings')} className="p-2 hover:bg-gray-100 rounded-lg">
+        <button onClick={() => navigate('/user/stitchings')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 dark:text-slate-300 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
           {isEdit ? t('stitchings.editOrder') : t('stitchings.createOrder')}
         </h1>
       </div>
@@ -142,115 +322,213 @@ const StitchingForm = () => {
       <Card>
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Customer Selection */}
+            {/* Customer Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 {t('stitchings.customer')} *
               </label>
-              {selectedCustomer ? (
-                <div className="flex items-center justify-between p-4 bg-primary-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                      <span className="text-primary-700 font-medium">{selectedCustomer.name?.charAt(0)}</span>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors"
+                >
+                  {selectedCustomer ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-primary-700 dark:text-primary-200 font-medium text-sm">{selectedCustomer.name?.charAt(0)}</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedCustomer.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{selectedCustomer.phone}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{selectedCustomer.name}</p>
-                      <p className="text-sm text-gray-500">{selectedCustomer.phone}</p>
-                    </div>
-                  </div>
-                  {!isEdit && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCustomer(null)}
-                      className="text-sm text-primary-600 hover:underline"
-                    >
-                      Change
-                    </button>
+                  ) : (
+                    <span className="text-gray-400 dark:text-slate-400">Select customer...</span>
                   )}
-                </div>
-              ) : (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t('loyalty.searchCustomer')}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  {customers.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-100 z-10 max-h-48 overflow-y-auto">
-                      {customers.map((customer) => (
+                  <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {dropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50 max-h-64 overflow-y-auto">
+                    {allCustomers.length > 0 ? (
+                      allCustomers.map((customer) => (
                         <button
                           key={customer._id}
                           type="button"
                           onClick={() => handleCustomerSelect(customer)}
-                          className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 text-left"
+                          className={`w-full p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-3 text-left transition-colors ${
+                            selectedCustomer?._id === customer._id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                          }`}
                         >
-                          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                            <span className="text-primary-700 text-sm font-medium">{customer.name?.charAt(0)}</span>
+                          <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                            <span className="text-primary-700 dark:text-primary-200 font-medium">{customer.name?.charAt(0)}</span>
                           </div>
                           <div>
-                            <p className="font-medium text-sm">{customer.name}</p>
-                            <p className="text-xs text-gray-500">{customer.phone}</p>
+                            <p className="font-medium text-gray-900 dark:text-slate-100">{customer.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone}</p>
                           </div>
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                label={t('stitchings.quantity')}
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                min="1"
-                required
-              />
-              <Input
-                label={t('stitchings.price')}
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                min="0"
-                step="0.01"
-                required
-              />
-              <Input
-                label={t('stitchings.paidAmount')}
-                type="number"
-                value={formData.paidAmount}
-                onChange={(e) => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <Input
-              label={t('stitchings.dueDate')}
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            />
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">{t('customers.measurements')}</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {measurementFields.map((field) => (
-                  <div key={field.key}>
-                    <label className="block text-xs text-gray-500 mb-1">{field.label}</label>
-                    <input
-                      type="number"
-                      value={formData.measurements[field.key] || ''}
-                      onChange={(e) => handleMeasurementChange(field.key, e.target.value)}
-                      step="0.1"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 dark:text-slate-400">No customers found</div>
+                    )}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Order For - Relation/Sibling Selector */}
+            {selectedCustomer && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <label className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Order For (Son / Brother / Relation)
+                  </label>
+                </div>
+                
+                {selectedRelation ? (
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-amber-700 dark:text-amber-200 font-medium">{selectedRelation.name?.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedRelation.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{selectedRelation.type}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearRelation}
+                      className="text-sm text-rose-600 dark:text-rose-400 hover:underline"
+                    >
+                      Use Customer Instead
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setRelationDropdownOpen(!relationDropdownOpen)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                    >
+                      <span className="text-gray-600 dark:text-slate-300">
+                        For {selectedCustomer.name} (Main Customer)
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform ${relationDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {relationDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-amber-200 dark:border-amber-700 z-50 max-h-48 overflow-y-auto">
+                        {selectedCustomer.relations && selectedCustomer.relations.length > 0 ? (
+                          selectedCustomer.relations.map((relation, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleRelationSelect(relation)}
+                              className="w-full p-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
+                            >
+                              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{relation.name?.charAt(0)}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-slate-100">{relation.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relation.type}</p>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
+                            No relations added for this customer.
+                            <br />
+                            <span className="text-xs">Add relations in Customer edit page</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Price and Quantity */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
+                <input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                  min="1"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.price')} <SARIcon className="w-4 h-4" /></label>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.paidAmount')} <SARIcon className="w-4 h-4" /></label>
+                <input
+                  type="number"
+                  value={formData.paidAmount}
+                  onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            {/* Due Date - Premium Style */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.dueDate')}</label>
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            {/* Measurements - Premium Visual UI */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')}</h3>
+                {selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? (
+                  <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+                    ✓ Auto-filled from {selectedRelation.name}
+                  </span>
+                ) : selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 && (
+                  <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
+                    ✓ Auto-filled from customer
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {measurementFields.map((field) => (
+                  <MeasurementCard
+                    key={field.key}
+                    measurementKey={field.key}
+                    label={field.label}
+                    value={formData.measurements[field.key]}
+                    onChange={(value) => handleMeasurementChange(field.key, value)}
+                  />
                 ))}
               </div>
             </div>

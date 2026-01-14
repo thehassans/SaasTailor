@@ -19,16 +19,16 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
           onClick={onClose}
         />
         <div className={`
-          relative w-full ${sizes[size]} bg-white rounded-2xl shadow-xl
+          relative w-full ${sizes[size]} bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-xl
           transform transition-all animate-fadeIn
         `}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
             </button>
           </div>
           <div className="px-6 py-4">
