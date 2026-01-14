@@ -19,13 +19,13 @@ const ORDER_STATUSES = [
 ];
 
 const THAWB_TYPES = [
-  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/images/thawbs/saudi.png' },
-  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/images/thawbs/qatari.png' },
-  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/images/thawbs/emirati.png' },
-  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/images/thawbs/kuwaiti.png' },
-  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/images/thawbs/omani.png' },
-  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/images/thawbs/bahraini.png' },
-  { value: 'yemeni', label: 'Yemeni', labelAr: 'يمني', image: '/images/thawbs/yemeni.png' }
+  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/images/saudi.png' },
+  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/images/qatari.png' },
+  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/images/emirati.png' },
+  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/images/kuwati.png' },
+  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/images/omani.png' },
+  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/images/Bahrini.png' },
+  { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/images/noum.png' }
 ];
 
 const StitchingForm = () => {
@@ -469,7 +469,7 @@ const StitchingForm = () => {
             {/* Thawb Type Selector */}
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
               <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100 mb-4">
-                Thawb Type / نوع الثوب *
+                {t('thawbTypes.title')} / نوع الثوب *
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {THAWB_TYPES.map((thawb) => {
@@ -507,7 +507,7 @@ const StitchingForm = () => {
                         </div>
                         <div className="text-center">
                           <p className={`text-sm font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-slate-200'}`}>
-                            {thawb.label}
+                            {t(`thawbTypes.${thawb.value}`)}
                           </p>
                           <p className={`text-xs ${isSelected ? 'text-amber-500 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
                             {thawb.labelAr}

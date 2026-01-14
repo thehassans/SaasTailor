@@ -33,7 +33,7 @@ const stitchingSchema = new mongoose.Schema({
   },
   thawbType: {
     type: String,
-    enum: ['saudi', 'qatari', 'emirati', 'kuwaiti', 'omani', 'bahraini', 'yemeni'],
+    enum: ['saudi', 'qatari', 'emirati', 'kuwaiti', 'omani', 'bahraini', 'noum'],
     default: 'saudi'
   },
   measurements: {

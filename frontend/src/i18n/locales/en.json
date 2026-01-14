@@ -196,5 +196,15 @@
     "hi": "हिन्दी",
     "ur": "اردو",
     "bn": "বাংলা"
+  },
+  "thawbTypes": {
+    "title": "Thawb Type",
+    "saudi": "Saudi",
+    "qatari": "Qatari",
+    "emirati": "Emirati",
+    "kuwaiti": "Kuwaiti",
+    "omani": "Omani",
+    "bahraini": "Bahraini",
+    "noum": "Noum"
   }
 }
