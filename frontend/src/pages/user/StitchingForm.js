@@ -39,6 +39,7 @@ const StitchingForm = () => {
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedRelation, setSelectedRelation] = useState(null);
   const [relationDropdownOpen, setRelationDropdownOpen] = useState(false);
@@ -51,7 +52,26 @@ const StitchingForm = () => {
     dueDate: '',
     status: 'pending',
     thawbType: 'saudi',
+    fabricColor: '',
     measurements: {}
+  });
+
+  const FABRIC_COLORS = [
+    { value: 'white', label: 'White', labelAr: 'أبيض', hex: '#FFFFFF' },
+    { value: 'cream', label: 'Cream', labelAr: 'كريمي', hex: '#FFFDD0' },
+    { value: 'offwhite', label: 'Off White', labelAr: 'أوف وايت', hex: '#FAF9F6' },
+    { value: 'beige', label: 'Beige', labelAr: 'بيج', hex: '#F5F5DC' },
+    { value: 'grey', label: 'Grey', labelAr: 'رمادي', hex: '#808080' },
+    { value: 'black', label: 'Black', labelAr: 'أسود', hex: '#000000' },
+    { value: 'navy', label: 'Navy', labelAr: 'كحلي', hex: '#000080' },
+    { value: 'brown', label: 'Brown', labelAr: 'بني', hex: '#8B4513' }
+  ];
+
+  const filteredCustomers = allCustomers.filter(customer => {
+    if (!customerSearch) return true;
+    const search = customerSearch.toLowerCase();
+    return customer.name?.toLowerCase().includes(search) || 
+           customer.phone?.includes(search);
   });
 
   useEffect(() => {
@@ -82,6 +102,7 @@ const StitchingForm = () => {
         dueDate: stitch.dueDate ? new Date(stitch.dueDate).toISOString().split('T')[0] : '',
         status: stitch.status || 'pending',
         thawbType: stitch.thawbType || 'saudi',
+        fabricColor: stitch.fabricColor || '',
         measurements: stitch.measurements || {}
       });
     } catch (error) {
@@ -262,6 +283,7 @@ const StitchingForm = () => {
         dueDate: formData.dueDate || null,
         status: formData.status,
         thawbType: formData.thawbType,
+        fabricColor: formData.fabricColor || null,
         measurements: formData.measurements
       };
 
@@ -312,7 +334,7 @@ const StitchingForm = () => {
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
               Back to Orders
             </Button>
-            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', measurements: {} }); }} className="w-full">
+            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {} }); }} className="w-full">
               Create Another Order
             </Button>
           </div>
@@ -363,29 +385,42 @@ const StitchingForm = () => {
                 </button>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50 max-h-64 overflow-y-auto">
-                    {allCustomers.length > 0 ? (
-                      allCustomers.map((customer) => (
-                        <button
-                          key={customer._id}
-                          type="button"
-                          onClick={() => handleCustomerSelect(customer)}
-                          className={`w-full p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-3 text-left transition-colors ${
-                            selectedCustomer?._id === customer._id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                          }`}
-                        >
-                          <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                            <span className="text-primary-700 dark:text-primary-200 font-medium">{customer.name?.charAt(0)}</span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-slate-100">{customer.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone}</p>
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-gray-500 dark:text-slate-400">No customers found</div>
-                    )}
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-gray-100 dark:border-slate-700">
+                      <input
+                        type="text"
+                        value={customerSearch}
+                        onChange={(e) => setCustomerSearch(e.target.value)}
+                        placeholder="Search by name or phone..."
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-52 overflow-y-auto">
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((customer) => (
+                          <button
+                            key={customer._id}
+                            type="button"
+                            onClick={() => { handleCustomerSelect(customer); setCustomerSearch(''); }}
+                            className={`w-full p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-3 text-left transition-colors ${
+                              selectedCustomer?._id === customer._id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                            }`}
+                          >
+                            <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                              <span className="text-primary-700 dark:text-primary-200 font-medium">{customer.name?.charAt(0)}</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-slate-100">{customer.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone}</p>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-500 dark:text-slate-400">No customers found</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -522,6 +557,53 @@ const StitchingForm = () => {
                           </svg>
                         </div>
                       )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fabric Color Selector (Optional) */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
+                  Fabric Color / لون القماش
+                </label>
+                <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {/* No color option */}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, fabricColor: '' })}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    !formData.fabricColor
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-300'
+                  }`}
+                >
+                  Not specified
+                </button>
+                {FABRIC_COLORS.map((color) => {
+                  const isSelected = formData.fabricColor === color.value;
+                  return (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, fabricColor: color.value })}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500'
+                          : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
+                      }`}
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-500"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <span className={`text-sm font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-slate-200'}`}>
+                        {color.label}
+                      </span>
                     </button>
                   );
                 })}

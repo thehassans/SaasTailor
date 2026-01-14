@@ -100,7 +100,8 @@ router.post('/', async (req, res) => {
       description, 
       dueDate,
       receiptNumber,
-      thawbType 
+      thawbType,
+      fabricColor 
     } = req.body;
     
     const customer = await Customer.findOne({ 
@@ -124,6 +125,7 @@ router.post('/', async (req, res) => {
       customerId,
       receiptNumber: finalReceiptNumber,
       thawbType: thawbType || 'saudi',
+      fabricColor: fabricColor || null,
       measurements: measurements || customer.measurements,
       quantity: quantity || 1,
       price,
@@ -167,7 +169,8 @@ router.put('/:id', async (req, res) => {
       description, 
       dueDate,
       status,
-      thawbType 
+      thawbType,
+      fabricColor 
     } = req.body;
     
     const stitching = await Stitching.findOne({ 
@@ -186,6 +189,7 @@ router.put('/:id', async (req, res) => {
     if (description !== undefined) stitching.description = description;
     if (dueDate !== undefined) stitching.dueDate = dueDate;
     if (thawbType) stitching.thawbType = thawbType;
+    if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();

@@ -36,6 +36,11 @@ const stitchingSchema = new mongoose.Schema({
     enum: ['saudi', 'qatari', 'emirati', 'kuwaiti', 'omani', 'bahraini', 'noum'],
     default: 'saudi'
   },
+  fabricColor: {
+    type: String,
+    enum: ['white', 'cream', 'offwhite', 'beige', 'grey', 'black', 'navy', 'brown', null],
+    default: null
+  },
   measurements: {
     type: measurementSchema,
     default: () => ({})
