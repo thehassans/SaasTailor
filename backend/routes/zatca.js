@@ -253,7 +253,6 @@ router.post('/report-invoice', authenticateToken, async (req, res) => {
     };
 
     // Make API call to ZATCA
-    const fetch = (await import('node-fetch')).default;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -319,7 +318,6 @@ router.post('/clear-invoice', authenticateToken, async (req, res) => {
       invoice: Buffer.from(invoiceXml).toString('base64')
     };
 
-    const fetch = (await import('node-fetch')).default;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -367,7 +365,6 @@ router.post('/onboarding/compliance-csid', authenticateToken, async (req, res) =
 
     const requestBody = { csr };
 
-    const fetch = (await import('node-fetch')).default;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -424,7 +421,6 @@ router.post('/onboarding/production-csid', authenticateToken, async (req, res) =
     
     const requestBody = { compliance_request_id: complianceRequestId };
 
-    const fetch = (await import('node-fetch')).default;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
