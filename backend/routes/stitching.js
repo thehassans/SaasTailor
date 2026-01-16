@@ -5,6 +5,7 @@ const Customer = require('../models/Customer');
 const Worker = require('../models/Worker');
 const User = require('../models/User');
 const { verifyToken, isUser } = require('../middleware/auth');
+const whatsappService = require('../utils/whatsappService');
 
 router.use(verifyToken, isUser);
 
@@ -146,6 +147,17 @@ router.post('/', async (req, res) => {
     
     await stitching.populate('customerId', 'name phone');
     
+    // Send WhatsApp notification for new order
+    const user = await User.findById(req.user._id);
+    if (user?.whatsappSettings?.enabled && user?.whatsappSettings?.autoMessageOnOrder) {
+      whatsappService.sendOrderNotification(user, customer, stitching)
+        .then(result => {
+          if (result.success) console.log('WhatsApp order notification sent');
+          else console.log('WhatsApp notification failed:', result.error);
+        })
+        .catch(err => console.error('WhatsApp error:', err));
+    }
+    
     res.status(201).json({ 
       message: 'Stitching order created successfully',
       stitching 
@@ -190,6 +202,7 @@ router.put('/:id', async (req, res) => {
     if (dueDate !== undefined) stitching.dueDate = dueDate;
     if (thawbType) stitching.thawbType = thawbType;
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
+    const oldStatus = stitching.status;
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();
@@ -199,6 +212,28 @@ router.put('/:id', async (req, res) => {
     await stitching.save();
     await stitching.populate('customerId', 'name phone');
     await stitching.populate('workerId', 'name');
+    
+    // Send WhatsApp notification on status change
+    if (status && status !== oldStatus) {
+      const user = await User.findById(req.user._id);
+      const customer = await Customer.findById(stitching.customerId._id || stitching.customerId);
+      
+      if (user?.whatsappSettings?.enabled && customer) {
+        if (status === 'completed' && user.whatsappSettings.autoMessageOnReady) {
+          whatsappService.sendReadyNotification(user, customer, stitching)
+            .then(result => {
+              if (result.success) console.log('WhatsApp ready notification sent');
+            })
+            .catch(err => console.error('WhatsApp error:', err));
+        } else if (status === 'delivered' && user.whatsappSettings.autoMessageOnDelivery) {
+          whatsappService.sendDeliveryNotification(user, customer, stitching)
+            .then(result => {
+              if (result.success) console.log('WhatsApp delivery notification sent');
+            })
+            .catch(err => console.error('WhatsApp error:', err));
+        }
+      }
+    }
     
     res.json({ message: 'Stitching updated successfully', stitching });
   } catch (error) {

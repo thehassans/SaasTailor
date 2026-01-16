@@ -1,125 +1,192 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const path = require('path');
+const axios = require('axios');
 
-const clients = new Map();
+const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
 
-const initWhatsApp = async (userId, onQR, onReady, onDisconnected) => {
+const formatPhoneNumber = (phone) => {
+  let formatted = phone.replace(/\D/g, '');
+  if (formatted.startsWith('0')) {
+    formatted = '966' + formatted.slice(1);
+  }
+  if (!formatted.startsWith('966') && formatted.length === 9) {
+    formatted = '966' + formatted;
+  }
+  return formatted;
+};
+
+const sendMessage = async (settings, phoneNumber, message) => {
   try {
-    if (clients.has(userId)) {
-      const existingClient = clients.get(userId);
-      if (existingClient.info) {
-        return { success: true, message: 'Already connected' };
-      }
+    if (!settings || !settings.enabled) {
+      return { success: false, error: 'WhatsApp not enabled' };
+    }
+    
+    if (!settings.accessToken || !settings.phoneNumberId) {
+      return { success: false, error: 'WhatsApp not configured. Please add your access token and phone number ID.' };
     }
 
-    const sessionPath = path.join(
-      process.env.WHATSAPP_SESSION_PATH || './whatsapp-sessions',
-      userId.toString()
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${settings.phoneNumberId}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: formattedPhone,
+        type: 'text',
+        text: { body: message }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${settings.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
     );
 
-    const client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: userId.toString(),
-        dataPath: sessionPath
-      }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu'
-        ]
+    console.log('WhatsApp message sent:', response.data);
+    return { success: true, messageId: response.data.messages?.[0]?.id };
+  } catch (error) {
+    console.error('WhatsApp send error:', error.response?.data || error.message);
+    return { 
+      success: false, 
+      error: error.response?.data?.error?.message || error.message 
+    };
+  }
+};
+
+const sendTemplateMessage = async (settings, phoneNumber, templateName, languageCode = 'en', components = []) => {
+  try {
+    if (!settings || !settings.enabled || !settings.accessToken || !settings.phoneNumberId) {
+      return { success: false, error: 'WhatsApp not configured' };
+    }
+
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${settings.phoneNumberId}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: formattedPhone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: languageCode },
+          components: components
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${settings.accessToken}`,
+          'Content-Type': 'application/json'
+        }
       }
-    });
+    );
 
-    client.on('qr', (qr) => {
-      qrcode.generate(qr, { small: true });
-      if (onQR) onQR(qr);
-    });
-
-    client.on('ready', () => {
-      console.log(`WhatsApp client ready for user: ${userId}`);
-      if (onReady) onReady();
-    });
-
-    client.on('disconnected', (reason) => {
-      console.log(`WhatsApp disconnected for user: ${userId}`, reason);
-      clients.delete(userId);
-      if (onDisconnected) onDisconnected(reason);
-    });
-
-    client.on('auth_failure', (msg) => {
-      console.error(`WhatsApp auth failure for user: ${userId}`, msg);
-      clients.delete(userId);
-    });
-
-    await client.initialize();
-    clients.set(userId, client);
-
-    return { success: true, message: 'Initializing...' };
+    return { success: true, messageId: response.data.messages?.[0]?.id };
   } catch (error) {
-    console.error('WhatsApp init error:', error);
-    return { success: false, error: error.message };
+    console.error('WhatsApp template error:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.error?.message || error.message };
   }
 };
 
-const sendMessage = async (userId, phoneNumber, message) => {
+const verifyConnection = async (settings) => {
   try {
-    const client = clients.get(userId);
-    if (!client || !client.info) {
-      return { success: false, error: 'WhatsApp not connected' };
+    if (!settings.accessToken || !settings.phoneNumberId) {
+      return { success: false, error: 'Missing credentials' };
     }
 
-    let formattedNumber = phoneNumber.replace(/\D/g, '');
-    if (!formattedNumber.includes('@c.us')) {
-      formattedNumber = `${formattedNumber}@c.us`;
-    }
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${settings.phoneNumberId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${settings.accessToken}`
+        }
+      }
+    );
 
-    const isRegistered = await client.isRegisteredUser(formattedNumber);
-    if (!isRegistered) {
-      return { success: false, error: 'Number not registered on WhatsApp' };
-    }
-
-    await client.sendMessage(formattedNumber, message);
-    return { success: true, message: 'Message sent successfully' };
+    return { 
+      success: true, 
+      phoneNumber: response.data.display_phone_number,
+      qualityRating: response.data.quality_rating,
+      verifiedName: response.data.verified_name
+    };
   } catch (error) {
-    console.error('WhatsApp send error:', error);
-    return { success: false, error: error.message };
+    console.error('WhatsApp verify error:', error.response?.data || error.message);
+    return { 
+      success: false, 
+      error: error.response?.data?.error?.message || error.message 
+    };
   }
 };
 
-const getStatus = (userId) => {
-  const client = clients.get(userId);
-  if (!client) {
-    return { connected: false, status: 'not_initialized' };
-  }
-  if (client.info) {
-    return { connected: true, status: 'connected', info: client.info };
-  }
-  return { connected: false, status: 'connecting' };
+const parseMessageTemplate = (template, data) => {
+  return template
+    .replace(/{businessName}/g, data.businessName || '')
+    .replace(/{receiptNumber}/g, data.receiptNumber || '')
+    .replace(/{customerName}/g, data.customerName || '')
+    .replace(/{price}/g, data.price || '0')
+    .replace(/{paidAmount}/g, data.paidAmount || '0')
+    .replace(/{balance}/g, data.balance || '0')
+    .replace(/{dueDate}/g, data.dueDate || '')
+    .replace(/{status}/g, data.status || '');
 };
 
-const disconnect = async (userId) => {
-  try {
-    const client = clients.get(userId);
-    if (client) {
-      await client.destroy();
-      clients.delete(userId);
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
+const sendOrderNotification = async (user, customer, order) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoMessageOnOrder) {
+    return { success: false, error: 'Auto-message on order disabled' };
   }
+
+  const message = parseMessageTemplate(settings.orderMessageTemplate, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name,
+    price: order.price,
+    paidAmount: order.paidAmount || 0,
+    balance: (order.price || 0) - (order.paidAmount || 0),
+    dueDate: order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'TBD'
+  });
+
+  return sendMessage(settings, customer.phone, message);
+};
+
+const sendReadyNotification = async (user, customer, order) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoMessageOnReady) {
+    return { success: false, error: 'Auto-message on ready disabled' };
+  }
+
+  const message = parseMessageTemplate(settings.readyMessageTemplate, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name
+  });
+
+  return sendMessage(settings, customer.phone, message);
+};
+
+const sendDeliveryNotification = async (user, customer, order) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoMessageOnDelivery) {
+    return { success: false, error: 'Auto-message on delivery disabled' };
+  }
+
+  const message = parseMessageTemplate(settings.deliveryMessageTemplate, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name
+  });
+
+  return sendMessage(settings, customer.phone, message);
 };
 
 module.exports = {
-  initWhatsApp,
   sendMessage,
-  getStatus,
-  disconnect
+  sendTemplateMessage,
+  verifyConnection,
+  parseMessageTemplate,
+  sendOrderNotification,
+  sendReadyNotification,
+  sendDeliveryNotification,
+  formatPhoneNumber
 };

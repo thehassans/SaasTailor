@@ -77,13 +77,17 @@ const userSchema = new mongoose.Schema({
     enum: ['light', 'dark'],
     default: 'light'
   },
-  whatsappEnabled: {
-    type: Boolean,
-    default: false
-  },
-  whatsappSession: {
-    type: String,
-    default: null
+  whatsappSettings: {
+    enabled: { type: Boolean, default: false },
+    accessToken: { type: String, default: '' },
+    phoneNumberId: { type: String, default: '' },
+    businessAccountId: { type: String, default: '' },
+    autoMessageOnOrder: { type: Boolean, default: true },
+    autoMessageOnReady: { type: Boolean, default: true },
+    autoMessageOnDelivery: { type: Boolean, default: true },
+    orderMessageTemplate: { type: String, default: 'Thank you for your order at {businessName}! Your order #{receiptNumber} has been received. Total: {price} SAR. Due date: {dueDate}. We will notify you when it is ready.' },
+    readyMessageTemplate: { type: String, default: 'Good news! Your order #{receiptNumber} at {businessName} is ready for pickup. Please visit us at your earliest convenience.' },
+    deliveryMessageTemplate: { type: String, default: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!' }
   },
   zatcaSettings: {
     vatNumber: { type: String, default: '' },
