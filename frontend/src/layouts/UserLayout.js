@@ -18,7 +18,8 @@ import {
   PanelLeftClose,
   PanelLeft,
   Globe,
-  Check
+  Check,
+  FileText
 } from 'lucide-react';
 
 const UserLayout = () => {
@@ -154,6 +155,7 @@ const UserLayout = () => {
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
     { key: 'loyalty', to: '/user/loyalty', icon: Heart, label: t('nav.loyalty') },
     { key: 'whatsapp', to: '/user/whatsapp', icon: MessageCircle, label: t('nav.whatsapp') },
+    { key: 'zatca', to: '/user/zatca', icon: FileText, label: t('nav.zatca') },
     { key: 'settings', to: '/user/settings', icon: Settings, label: t('nav.settings') }
   ];
 

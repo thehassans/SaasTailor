@@ -70,6 +70,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  zatcaSettings: {
+    vatNumber: { type: String, default: '' },
+    crn: { type: String, default: '' },
+    street: { type: String, default: '' },
+    buildingNumber: { type: String, default: '' },
+    district: { type: String, default: '' },
+    city: { type: String, default: '' },
+    postalCode: { type: String, default: '' },
+    plotId: { type: String, default: '' },
+    phase: { type: Number, default: 1 },
+    environment: { type: String, enum: ['sandbox', 'simulation', 'production'], default: 'sandbox' },
+    invoiceCounter: { type: Number, default: 0 },
+    previousInvoiceHash: { type: String, default: null },
+    csid: { type: String, default: null },
+    csidSecret: { type: String, default: null },
+    productionCsid: { type: String, default: null },
+    productionCsidSecret: { type: String, default: null },
+    onboardingStatus: { type: String, default: '' },
+    enabled: { type: Boolean, default: false },
+    updatedAt: { type: Date, default: null }
+  },
   role: {
     type: String,
     default: 'user',

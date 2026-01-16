@@ -84,6 +84,27 @@ const stitchingSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  zatcaStatus: {
+    type: String,
+    enum: ['PENDING', 'REPORTED', 'CLEARED', 'FAILED', null],
+    default: null
+  },
+  zatcaResponse: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+  zatcaReportedAt: {
+    type: Date,
+    default: null
+  },
+  zatcaUUID: {
+    type: String,
+    default: null
+  },
+  zatcaInvoiceHash: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

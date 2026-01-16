@@ -28,6 +28,7 @@ import Stitchings from './pages/user/Stitchings';
 import StitchingForm from './pages/user/StitchingForm';
 import Loyalty from './pages/user/Loyalty';
 import WhatsApp from './pages/user/WhatsApp';
+import Zatca from './pages/user/Zatca';
 import Settings from './pages/user/Settings';
 
 // Worker Pages
@@ -108,6 +109,7 @@ const AppRoutes = () => {
           <Route path="stitchings/:id/edit" element={<StitchingForm />} />
           <Route path="loyalty" element={<Loyalty />} />
           <Route path="whatsapp" element={<WhatsApp />} />
+          <Route path="zatca" element={<Zatca />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
