@@ -16,7 +16,21 @@ const stitchingRoutes = require('./routes/stitching');
 const paymentRoutes = require('./routes/payment');
 const settingsRoutes = require('./routes/settings');
 const whatsappRoutes = require('./routes/whatsapp');
-const zatcaRoutes = require('./routes/zatca');
+
+// ZATCA routes with error handling
+let zatcaRoutes;
+try {
+  zatcaRoutes = require('./routes/zatca');
+  console.log('ZATCA routes loaded successfully');
+} catch (err) {
+  console.error('Failed to load ZATCA routes:', err.message);
+  console.error('Stack:', err.stack);
+  // Create fallback router
+  zatcaRoutes = require('express').Router();
+  zatcaRoutes.all('*', (req, res) => {
+    res.status(503).json({ error: 'ZATCA service unavailable', details: err.message });
+  });
+}
 
 const { checkSubscriptions } = require('./utils/subscriptionChecker');
 const { initializeAdmin } = require('./utils/initAdmin');
