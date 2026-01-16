@@ -7,10 +7,25 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  nameAr: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   businessName: {
     type: String,
     required: true,
     trim: true
+  },
+  businessNameAr: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  businessAddress: {
+    type: String,
+    trim: true,
+    default: ''
   },
   phone: {
     type: String,

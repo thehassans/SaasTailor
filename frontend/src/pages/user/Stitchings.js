@@ -171,9 +171,11 @@ const Stitchings = () => {
           @page { size: 80mm auto; margin: 0; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; }
-          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
-          .logo { max-width: 50px; max-height: 30px; margin-bottom: 4px; }
-          .shop-name { font-size: 14px; font-weight: bold; }
+          .header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 8px; }
+          .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
+          .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+          .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
+          .shop-address { font-size: 9px; color: #666; margin-top: 4px; }
           .receipt-no { font-size: 16px; font-weight: bold; margin: 8px 0; text-align: center; }
           .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
           .label { color: #666; }
@@ -191,6 +193,8 @@ const Stitchings = () => {
         <div class="header">
           ${logoSrc ? `<img src="${logoSrc}" class="logo" />` : ''}
           <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
+          ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
+          ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
         </div>
         <div class="receipt-no">#${stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A'}</div>
         <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${stitch.customerId?.name || '-'}</span></div>

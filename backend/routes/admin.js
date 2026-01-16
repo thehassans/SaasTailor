@@ -119,7 +119,7 @@ router.get('/users/:id', async (req, res) => {
 // Create user
 router.post('/users', upload.single('logo'), async (req, res) => {
   try {
-    const { name, businessName, phone, password, subscriptionType } = req.body;
+    const { name, nameAr, businessName, businessNameAr, businessAddress, phone, password, subscriptionType, receiptPrefix } = req.body;
     
     const existingUser = await User.findOne({ phone });
     if (existingUser) {
@@ -130,11 +130,15 @@ router.post('/users', upload.single('logo'), async (req, res) => {
     
     const user = new User({
       name,
+      nameAr: nameAr || name,
       businessName,
+      businessNameAr: businessNameAr || businessName,
+      businessAddress: businessAddress || '',
       phone,
       password,
       subscriptionType: subscriptionType || 'trial',
       subscriptionEndDate,
+      receiptPrefix: receiptPrefix || 'RCP',
       logo: req.file ? `/uploads/${req.file.filename}` : null
     });
     
@@ -159,7 +163,7 @@ router.post('/users', upload.single('logo'), async (req, res) => {
 // Update user
 router.put('/users/:id', upload.single('logo'), async (req, res) => {
   try {
-    const { name, phone, subscriptionType, isActive } = req.body;
+    const { name, nameAr, businessNameAr, businessAddress, phone, subscriptionType, isActive, receiptPrefix } = req.body;
     
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -167,7 +171,11 @@ router.put('/users/:id', upload.single('logo'), async (req, res) => {
     }
     
     if (name) user.name = name;
+    if (nameAr) user.nameAr = nameAr;
+    if (businessNameAr) user.businessNameAr = businessNameAr;
+    if (businessAddress !== undefined) user.businessAddress = businessAddress;
     if (phone) user.phone = phone;
+    if (receiptPrefix) user.receiptPrefix = receiptPrefix;
     if (isActive !== undefined) user.isActive = isActive;
     
     if (subscriptionType && subscriptionType !== user.subscriptionType) {

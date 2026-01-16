@@ -19,7 +19,11 @@ const AdminUserForm = () => {
   const [logoPreview, setLogoPreview] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    nameAr: '',
     businessName: '',
+    businessNameAr: '',
+    businessAddress: '',
+    receiptPrefix: 'RCP',
     phone: '',
     password: '',
     subscriptionType: 'trial',
@@ -36,7 +40,11 @@ const AdminUserForm = () => {
       const user = response.data.user;
       setFormData({
         name: user.name,
+        nameAr: user.nameAr || '',
         businessName: user.businessName,
+        businessNameAr: user.businessNameAr || '',
+        businessAddress: user.businessAddress || '',
+        receiptPrefix: user.receiptPrefix || 'RCP',
         phone: user.phone,
         password: '',
         subscriptionType: user.subscriptionType,
@@ -64,7 +72,11 @@ const AdminUserForm = () => {
     try {
       const data = new FormData();
       data.append('name', formData.name);
+      data.append('nameAr', formData.nameAr || formData.name);
       data.append('businessName', formData.businessName);
+      data.append('businessNameAr', formData.businessNameAr || formData.businessName);
+      data.append('businessAddress', formData.businessAddress);
+      data.append('receiptPrefix', formData.receiptPrefix);
       data.append('phone', formData.phone);
       if (formData.password) data.append('password', formData.password);
       data.append('subscriptionType', formData.subscriptionType);
@@ -135,17 +147,50 @@ const AdminUserForm = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label={t('workers.name')}
+                label={t('workers.name') + ' (English)'}
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value, nameAr: formData.nameAr || e.target.value })}
                 required
               />
               <Input
-                label={t('admin.businessName')}
+                label={t('workers.name') + ' (Arabic)'}
+                value={formData.nameAr}
+                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                placeholder="الاسم بالعربي"
+                dir="rtl"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={t('admin.businessName') + ' (English)'}
                 value={formData.businessName}
-                onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, businessName: e.target.value, businessNameAr: formData.businessNameAr || e.target.value })}
                 required
                 disabled={isEdit}
+              />
+              <Input
+                label={t('admin.businessName') + ' (Arabic)'}
+                value={formData.businessNameAr}
+                onChange={(e) => setFormData({ ...formData, businessNameAr: e.target.value })}
+                placeholder="اسم المحل بالعربي"
+                dir="rtl"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Business Address"
+                value={formData.businessAddress}
+                onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
+                placeholder="Street, Building, City"
+              />
+              <Input
+                label="Receipt Prefix"
+                value={formData.receiptPrefix}
+                onChange={(e) => setFormData({ ...formData, receiptPrefix: e.target.value.toUpperCase() })}
+                placeholder="RCP"
+                maxLength={5}
               />
             </div>
 

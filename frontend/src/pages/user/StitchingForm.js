@@ -237,15 +237,17 @@ const StitchingForm = () => {
           @page { size: 80mm auto; margin: 2mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; }
-          .header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
-          .logo { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; }
-          .shop-name { font-size: 14px; font-weight: bold; }
+          .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
+          .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
+          .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+          .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
+          .shop-address { font-size: 9px; color: #666; margin-top: 4px; }
           .receipt-no { font-size: 16px; font-weight: bold; text-align: center; margin: 8px 0; }
           .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
           .label { color: #666; font-size: 10px; }
           .value { font-weight: 600; }
           .status { text-align: center; padding: 6px; background: #f0f0f0; border-radius: 4px; margin: 8px 0; font-weight: bold; }
-          .no-logo { width: 40px; height: 40px; background: #e5e7eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; }
+          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
           .qr-container { display: flex; justify-content: center; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
           .qr-box { flex: 1; text-align: center; max-width: 100px; }
           .qr-box img { width: 70px; height: 70px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
@@ -257,11 +259,10 @@ const StitchingForm = () => {
       </head>
       <body>
         <div class="header">
-          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>Logo</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
-          <div>
-            <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
-            <div style="font-size:10px;color:#666;">${user?.phone || ''}</div>
-          </div>
+          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>${(user?.businessName || 'T').charAt(0)}</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
+          <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
+          ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
+          ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
         </div>
         <div class="receipt-no">#${createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</div>
         <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${selectedCustomer?.name || '-'}</span></div>
