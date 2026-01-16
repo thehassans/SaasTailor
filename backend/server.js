@@ -19,14 +19,19 @@ const whatsappRoutes = require('./routes/whatsapp');
 
 // ZATCA routes with error handling
 let zatcaRoutes;
+let zatcaLoadError = null;
 try {
   zatcaRoutes = require('./routes/zatca');
   console.log('ZATCA routes loaded successfully');
 } catch (err) {
   console.error('Failed to load ZATCA routes:', err.message);
   console.error('Stack:', err.stack);
+  zatcaLoadError = { message: err.message, stack: err.stack };
   // Create fallback router
   zatcaRoutes = require('express').Router();
+  zatcaRoutes.get('/debug', (req, res) => {
+    res.json({ error: 'ZATCA routes failed to load', details: zatcaLoadError });
+  });
   zatcaRoutes.all('*', (req, res) => {
     res.status(503).json({ error: 'ZATCA service unavailable', details: err.message });
   });
