@@ -178,9 +178,13 @@ const Stitchings = () => {
           .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
           .label { color: #666; }
           .value { font-weight: 600; }
-          .qr-section { text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #000; }
-          .qr-section img { width: 80px; height: 80px; }
-          .qr-text { font-size: 9px; color: #666; margin-top: 4px; }
+          .qr-container { display: flex; justify-content: center; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
+          .qr-box { flex: 1; text-align: center; max-width: 100px; }
+          .qr-box img { width: 70px; height: 70px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
+          .qr-label { font-size: 8px; color: #374151; margin-top: 6px; font-weight: 600; line-height: 1.2; }
+          .qr-sublabel { font-size: 7px; color: #6b7280; margin-top: 2px; }
+          .single-qr { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
+          .single-qr img { width: 80px; height: 80px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
         </style>
       </head>
       <body>
@@ -197,16 +201,25 @@ const Stitchings = () => {
         <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} SAR</span></div>
         <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
-        ${zatcaQrUrl ? `
-        <div class="qr-section">
-          <img src="${zatcaQrUrl}" alt="ZATCA QR" />
-          <div class="qr-text">ZATCA E-Invoice / فاتورة إلكترونية</div>
+        ${zatcaQrUrl && qrCodeUrl ? `
+        <div class="qr-container">
+          <div class="qr-box">
+            <img src="${zatcaQrUrl}" alt="ZATCA QR" />
+            <div class="qr-label">ZATCA</div>
+            <div class="qr-sublabel">فاتورة إلكترونية</div>
+          </div>
+          <div class="qr-box">
+            <img src="${qrCodeUrl}" alt="Track QR" />
+            <div class="qr-label">Track Order</div>
+            <div class="qr-sublabel">تتبع الطلب</div>
+          </div>
+        </div>
+        ` : qrCodeUrl ? `
+        <div class="single-qr">
+          <img src="${qrCodeUrl}" alt="QR Code" />
+          <div class="qr-label" style="font-size: 9px; margin-top: 6px;">${getLabel('scanToTrack')}</div>
         </div>
         ` : ''}
-        <div class="qr-section" ${zatcaQrUrl ? 'style="border-top: none; margin-top: 4px;"' : ''}>
-          ${qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR Code" />` : ''}
-          <div class="qr-text">${getLabel('scanToTrack')}</div>
-        </div>
         <script>window.onload = function() { window.print(); }</script>
       </body>
       </html>
