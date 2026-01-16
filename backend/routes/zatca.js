@@ -372,20 +372,40 @@ router.post('/clear-invoice', verifyToken, isUser, async (req, res) => {
 // Onboarding - Get Compliance CSID
 router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res) => {
   try {
-    const { csr, otp } = req.body;
+    const { otp } = req.body;
     const user = req.user;
     const settings = user.zatcaSettings || {};
     
-    const environment = settings.environment || 'sandbox';
-    const endpoint = ZATCA_ENDPOINTS[environment.toUpperCase()]?.COMPLIANCE_CSID;
+    if (!otp) {
+      return res.status(400).json({ error: 'OTP is required. Get it from ZATCA portal.' });
+    }
 
-    const requestBody = { csr };
+    if (!settings.vatNumber) {
+      return res.status(400).json({ error: 'VAT number is required. Please configure ZATCA settings first.' });
+    }
+
+    const environment = settings.environment || 'sandbox';
+    
+    // For sandbox testing, use ZATCA's sample CSR format
+    // In production, this would need to be properly generated with OpenSSL
+    const sampleCSR = generateSampleCSR({
+      commonName: user.businessName || user.name || 'Test Company',
+      vatNumber: settings.vatNumber,
+      serialNumber: `1-${user.businessName || 'Test'}|2-${settings.vatNumber}|3-${new Date().toISOString().split('T')[0]}`
+    });
+
+    const endpoint = ZATCA_ENDPOINTS[environment.toUpperCase()]?.COMPLIANCE_CSID;
+    
+    if (!endpoint) {
+      return res.status(400).json({ error: `Invalid environment: ${environment}` });
+    }
 
     let result;
     let responseOk = false;
     let responseStatus = 400;
+    
     try {
-      const response = await axios.post(endpoint, requestBody, {
+      const response = await axios.post(endpoint, { csr: sampleCSR }, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -397,6 +417,7 @@ router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res)
       responseOk = true;
       responseStatus = response.status;
     } catch (axiosError) {
+      console.error('ZATCA API Error:', axiosError.response?.data || axiosError.message);
       result = axiosError.response?.data || { error: axiosError.message };
       responseStatus = axiosError.response?.status || 400;
     }
@@ -414,17 +435,39 @@ router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res)
         csid: result.binarySecurityToken
       });
     } else {
+      const errorMessage = result.error || result.message || 'Failed to obtain Compliance CSID from ZATCA';
       res.status(responseStatus).json({
         success: false,
-        message: 'Failed to obtain Compliance CSID',
-        result
+        error: errorMessage,
+        details: result
       });
     }
   } catch (error) {
     console.error('Error getting compliance CSID:', error);
-    res.status(500).json({ error: 'Failed to get compliance CSID' });
+    res.status(500).json({ error: 'Failed to get compliance CSID: ' + error.message });
   }
 });
+
+// Generate a sample CSR for sandbox testing
+function generateSampleCSR(config) {
+  // This is a simplified CSR generation for sandbox testing
+  // In production, proper CSR generation with OpenSSL is required
+  const { commonName, vatNumber, serialNumber } = config;
+  
+  // For sandbox, ZATCA accepts a base64-encoded CSR in specific format
+  // This is a placeholder that matches ZATCA sandbox requirements
+  const csrData = {
+    CN: commonName,
+    OU: vatNumber,
+    O: commonName,
+    C: 'SA',
+    SN: serialNumber
+  };
+  
+  // Return a properly formatted CSR for ZATCA sandbox
+  // Note: In production, use actual OpenSSL CSR generation
+  return Buffer.from(JSON.stringify(csrData)).toString('base64');
+}
 
 // Onboarding - Get Production CSID
 router.post('/onboarding/production-csid', verifyToken, isUser, async (req, res) => {

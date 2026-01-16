@@ -166,8 +166,12 @@ const Zatca = () => {
     setLoading(true);
     try {
       if (step === 'compliance') {
+        if (!settings.otp) {
+          toast.error('Please enter OTP from ZATCA portal');
+          setLoading(false);
+          return;
+        }
         const response = await api.post('/zatca/onboarding/compliance-csid', {
-          csr: settings.csr,
           otp: settings.otp
         });
         if (response.data.success) {
