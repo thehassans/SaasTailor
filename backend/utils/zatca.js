@@ -71,9 +71,18 @@ function generateInvoiceHash(xmlContent) {
   return crypto.createHash('sha256').update(xmlContent).digest('base64');
 }
 
-// Generate UUID for invoice
+// Generate UUID for invoice (compatible with older Node versions)
 function generateUUID() {
-  return crypto.randomUUID();
+  // Use crypto.randomUUID if available (Node 14.17+), otherwise fallback
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for older Node versions
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = crypto.randomBytes(1)[0] % 16;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 // Generate Invoice Counter Value (ICV)
