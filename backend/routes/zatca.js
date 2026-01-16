@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { authenticateToken } = require('../middleware/auth');
+const { verifyToken, isUser } = require('../middleware/auth');
 const User = require('../models/User');
 const Stitching = require('../models/Stitching');
 const Customer = require('../models/Customer');
@@ -20,7 +20,7 @@ const {
 } = require('../utils/zatca');
 
 // Get ZATCA settings for user
-router.get('/settings', authenticateToken, async (req, res) => {
+router.get('/settings', verifyToken, isUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('zatcaSettings businessName');
     res.json({
@@ -34,7 +34,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 });
 
 // Save ZATCA settings
-router.put('/settings', authenticateToken, async (req, res) => {
+router.put('/settings', verifyToken, isUser, async (req, res) => {
   try {
     const {
       vatNumber,
@@ -90,7 +90,7 @@ router.put('/settings', authenticateToken, async (req, res) => {
 });
 
 // Generate Phase 1 QR code data for an invoice
-router.post('/generate-qr', authenticateToken, async (req, res) => {
+router.post('/generate-qr', verifyToken, isUser, async (req, res) => {
   try {
     const { stitchingId, customInvoice } = req.body;
     const user = await User.findById(req.user.id);
@@ -144,7 +144,7 @@ router.post('/generate-qr', authenticateToken, async (req, res) => {
 });
 
 // Generate Phase 2 XML invoice
-router.post('/generate-xml', authenticateToken, async (req, res) => {
+router.post('/generate-xml', verifyToken, isUser, async (req, res) => {
   try {
     const { stitchingId, invoiceType = 'SIMPLIFIED' } = req.body;
     const user = await User.findById(req.user.id);
@@ -230,7 +230,7 @@ router.post('/generate-xml', authenticateToken, async (req, res) => {
 });
 
 // Report invoice to ZATCA (Phase 2 - Simplified invoices)
-router.post('/report-invoice', authenticateToken, async (req, res) => {
+router.post('/report-invoice', verifyToken, isUser, async (req, res) => {
   try {
     const { invoiceXml, invoiceHash, uuid } = req.body;
     const user = await User.findById(req.user.id);
@@ -307,7 +307,7 @@ router.post('/report-invoice', authenticateToken, async (req, res) => {
 });
 
 // Clear invoice with ZATCA (Phase 2 - Standard B2B invoices)
-router.post('/clear-invoice', authenticateToken, async (req, res) => {
+router.post('/clear-invoice', verifyToken, isUser, async (req, res) => {
   try {
     const { invoiceXml, invoiceHash, uuid } = req.body;
     const user = await User.findById(req.user.id);
@@ -371,7 +371,7 @@ router.post('/clear-invoice', authenticateToken, async (req, res) => {
 });
 
 // Onboarding - Get Compliance CSID
-router.post('/onboarding/compliance-csid', authenticateToken, async (req, res) => {
+router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res) => {
   try {
     const { csr, otp } = req.body;
     const user = await User.findById(req.user.id);
@@ -428,7 +428,7 @@ router.post('/onboarding/compliance-csid', authenticateToken, async (req, res) =
 });
 
 // Onboarding - Get Production CSID
-router.post('/onboarding/production-csid', authenticateToken, async (req, res) => {
+router.post('/onboarding/production-csid', verifyToken, isUser, async (req, res) => {
   try {
     const { complianceRequestId } = req.body;
     const user = await User.findById(req.user.id);
@@ -492,7 +492,7 @@ router.post('/onboarding/production-csid', authenticateToken, async (req, res) =
 });
 
 // Get invoice history with ZATCA status
-router.get('/invoices', authenticateToken, async (req, res) => {
+router.get('/invoices', verifyToken, isUser, async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     
@@ -526,7 +526,7 @@ router.get('/invoices', authenticateToken, async (req, res) => {
 });
 
 // Generate CSR configuration
-router.post('/generate-csr-config', authenticateToken, async (req, res) => {
+router.post('/generate-csr-config', verifyToken, isUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const settings = user.zatcaSettings || {};
