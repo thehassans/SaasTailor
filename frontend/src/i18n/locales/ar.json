@@ -234,6 +234,8 @@
     "phase": "المرحلة",
     "enableZatca": "تفعيل تكامل زاتكا",
     "enableDescription": "إنشاء فواتير إلكترونية متوافقة تلقائياً",
+    "showOnInvoice": "إظهار رمز QR زاتكا على الفواتير",
+    "showOnInvoiceDesc": "عرض رمز QR زاتكا على الإيصالات المطبوعة",
     "invoiceCounter": "عداد الفواتير",
     "selectOrder": "اختر الطلب",
     "noOrders": "لا توجد طلبات مسلّمة",

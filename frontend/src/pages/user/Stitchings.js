@@ -10,6 +10,7 @@ import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
+import QRCode from 'qrcode';
 
 const Stitchings = () => {
   const { t } = useTranslation();
@@ -80,10 +81,50 @@ const Stitchings = () => {
     }
   };
 
-  const handlePrintLabel = (stitch) => {
+  const handlePrintLabel = async (stitch) => {
     const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/track-order?id=${stitch._id}`)}`;
     const labelLang = user?.labelLanguage || 'both';
+    
+    // Generate QR code
+    let qrCodeUrl = '';
+    let zatcaQrUrl = '';
+    const zatcaEnabled = user?.zatcaSettings?.enabled && user?.zatcaSettings?.showOnInvoice;
+    
+    try {
+      // Track order QR
+      qrCodeUrl = await QRCode.toDataURL(`${window.location.origin}/track-order?id=${stitch._id}`, { width: 100, margin: 1 });
+      
+      // ZATCA QR if enabled
+      if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
+        const vatRate = 0.15;
+        const total = parseFloat(stitch.price) || 0;
+        const vatAmount = (total * vatRate / (1 + vatRate)).toFixed(2);
+        const timestamp = new Date().toISOString();
+        
+        // Generate TLV encoded ZATCA QR data
+        const tlvData = generateTLV([
+          { tag: 1, value: user?.businessName || '' },
+          { tag: 2, value: user?.zatcaSettings?.vatNumber || '' },
+          { tag: 3, value: timestamp },
+          { tag: 4, value: total.toFixed(2) },
+          { tag: 5, value: vatAmount }
+        ]);
+        zatcaQrUrl = await QRCode.toDataURL(tlvData, { width: 100, margin: 1 });
+      }
+    } catch (err) {
+      console.error('QR generation error:', err);
+    }
+    
+    // TLV encoding helper
+    function generateTLV(fields) {
+      let result = [];
+      fields.forEach(f => {
+        const value = String(f.value);
+        const valueBytes = new TextEncoder().encode(value);
+        result.push(f.tag, valueBytes.length, ...valueBytes);
+      });
+      return btoa(String.fromCharCode(...result));
+    }
     
     const labels = {
       customer: { en: 'Customer', ar: 'العميل' },
@@ -156,8 +197,14 @@ const Stitchings = () => {
         <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} SAR</span></div>
         <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
+        ${zatcaQrUrl ? `
         <div class="qr-section">
-          <img src="${qrCodeUrl}" alt="QR Code" />
+          <img src="${zatcaQrUrl}" alt="ZATCA QR" />
+          <div class="qr-text">ZATCA E-Invoice / فاتورة إلكترونية</div>
+        </div>
+        ` : ''}
+        <div class="qr-section" ${zatcaQrUrl ? 'style="border-top: none; margin-top: 4px;"' : ''}>
+          ${qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR Code" />` : ''}
           <div class="qr-text">${getLabel('scanToTrack')}</div>
         </div>
         <script>window.onload = function() { window.print(); }</script>

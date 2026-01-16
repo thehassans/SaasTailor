@@ -53,7 +53,8 @@ router.put('/settings', authenticateToken, async (req, res) => {
       productionCsid,
       productionCsidSecret,
       otp,
-      enabled
+      enabled,
+      showOnInvoice
     } = req.body;
 
     const zatcaSettings = {
@@ -75,6 +76,7 @@ router.put('/settings', authenticateToken, async (req, res) => {
       productionCsidSecret,
       otp,
       enabled: enabled || false,
+      showOnInvoice: showOnInvoice || false,
       updatedAt: new Date()
     };
 

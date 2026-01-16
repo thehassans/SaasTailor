@@ -413,6 +413,23 @@ const Zatca = () => {
                 </button>
               </div>
 
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-slate-100">{t('zatca.showOnInvoice')}</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">{t('zatca.showOnInvoiceDesc')}</div>
+                </div>
+                <button
+                  onClick={() => setSettings({ ...settings, showOnInvoice: !settings.showOnInvoice })}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    settings.showOnInvoice ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-slate-600'
+                  }`}
+                >
+                  <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    settings.showOnInvoice ? 'left-8' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+
               <div className="pt-2">
                 <div className="text-sm text-gray-500 dark:text-slate-400 mb-2">
                   {t('zatca.invoiceCounter')}: <span className="font-bold text-gray-900 dark:text-slate-100">{settings.invoiceCounter}</span>

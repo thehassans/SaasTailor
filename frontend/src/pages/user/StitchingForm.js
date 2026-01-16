@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronDown, Calendar, Printer, Users } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
+import QRCode from 'qrcode';
 
 const ORDER_STATUSES = [
   { value: 'pending', label: 'Pending / قيد الانتظار', color: 'gray' },
@@ -142,18 +143,49 @@ const StitchingForm = () => {
     });
   };
 
-  const generateQRCode = (orderId) => {
-    const trackUrl = `${window.location.origin}/track-order?id=${orderId}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(trackUrl)}`;
-  };
-
-  const handlePrintLabel = () => {
+  const handlePrintLabel = async () => {
     if (!createdOrder) return;
     
     const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
-    const qrCodeUrl = generateQRCode(createdOrder._id);
     const trackUrl = `${window.location.origin}/track-order?id=${createdOrder._id}`;
     const labelLang = user?.labelLanguage || 'both';
+    
+    // Generate QR codes
+    let qrCodeUrl = '';
+    let zatcaQrUrl = '';
+    const zatcaEnabled = user?.zatcaSettings?.enabled && user?.zatcaSettings?.showOnInvoice;
+    
+    try {
+      qrCodeUrl = await QRCode.toDataURL(trackUrl, { width: 100, margin: 1 });
+      
+      if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
+        const vatRate = 0.15;
+        const total = parseFloat(formData.price) || 0;
+        const vatAmount = (total * vatRate / (1 + vatRate)).toFixed(2);
+        const timestamp = new Date().toISOString();
+        
+        const generateTLV = (fields) => {
+          let result = [];
+          fields.forEach(f => {
+            const value = String(f.value);
+            const valueBytes = new TextEncoder().encode(value);
+            result.push(f.tag, valueBytes.length, ...valueBytes);
+          });
+          return btoa(String.fromCharCode(...result));
+        };
+        
+        const tlvData = generateTLV([
+          { tag: 1, value: user?.businessName || '' },
+          { tag: 2, value: user?.zatcaSettings?.vatNumber || '' },
+          { tag: 3, value: timestamp },
+          { tag: 4, value: total.toFixed(2) },
+          { tag: 5, value: vatAmount }
+        ]);
+        zatcaQrUrl = await QRCode.toDataURL(tlvData, { width: 100, margin: 1 });
+      }
+    } catch (err) {
+      console.error('QR generation error:', err);
+    }
     
     // Bilingual labels
     const labels = {
@@ -236,10 +268,15 @@ const StitchingForm = () => {
         <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(formData.price || 0) - (formData.paidAmount || 0)} ${sarSvg}</span></div>
         <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${formData.dueDate || '-'}</span></div>
         <div class="status">${getLabel('status')}: ${getStatus()}</div>
+        ${zatcaQrUrl ? `
         <div class="qr-section">
-          <img src="${qrCodeUrl}" class="qr-img" alt="QR Code" />
+          <img src="${zatcaQrUrl}" class="qr-img" alt="ZATCA QR" />
+          <div class="qr-text">ZATCA E-Invoice / فاتورة إلكترونية</div>
+        </div>
+        ` : ''}
+        <div class="qr-section" ${zatcaQrUrl ? 'style="border-top: none; margin-top: 4px;"' : ''}>
+          ${qrCodeUrl ? `<img src="${qrCodeUrl}" class="qr-img" alt="QR Code" />` : ''}
           <div class="qr-text">${getLabel('scanToTrack')}</div>
-          <div class="qr-text" style="font-size:8px;word-break:break-all;">${trackUrl}</div>
         </div>
       </body>
       </html>

@@ -89,6 +89,7 @@ const userSchema = new mongoose.Schema({
     productionCsidSecret: { type: String, default: null },
     onboardingStatus: { type: String, default: '' },
     enabled: { type: Boolean, default: false },
+    showOnInvoice: { type: Boolean, default: false },
     updatedAt: { type: Date, default: null }
   },
   role: {
