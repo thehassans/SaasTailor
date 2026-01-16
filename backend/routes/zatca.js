@@ -22,10 +22,9 @@ const {
 // Get ZATCA settings for user
 router.get('/settings', verifyToken, isUser, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('zatcaSettings businessName');
     res.json({
-      settings: user.zatcaSettings || {},
-      businessName: user.businessName
+      settings: req.user.zatcaSettings || {},
+      businessName: req.user.businessName
     });
   } catch (error) {
     console.error('Error fetching ZATCA settings:', error);
@@ -81,7 +80,7 @@ router.put('/settings', verifyToken, isUser, async (req, res) => {
       updatedAt: new Date()
     };
 
-    await User.findByIdAndUpdate(req.user.id, { zatcaSettings });
+    await User.findByIdAndUpdate(req.user._id, { zatcaSettings });
     res.json({ message: 'ZATCA settings saved successfully', settings: zatcaSettings });
   } catch (error) {
     console.error('Error saving ZATCA settings:', error);
@@ -93,7 +92,7 @@ router.put('/settings', verifyToken, isUser, async (req, res) => {
 router.post('/generate-qr', verifyToken, isUser, async (req, res) => {
   try {
     const { stitchingId, customInvoice } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     
     if (!user.zatcaSettings?.vatNumber) {
       return res.status(400).json({ error: 'ZATCA settings not configured. Please set VAT number.' });
@@ -102,7 +101,7 @@ router.post('/generate-qr', verifyToken, isUser, async (req, res) => {
     let invoiceData;
     
     if (stitchingId) {
-      const stitching = await Stitching.findById(stitchingId).populate('customer');
+      const stitching = await Stitching.findById(stitchingId).populate('customerId');
       if (!stitching) {
         return res.status(404).json({ error: 'Stitching order not found' });
       }
@@ -147,13 +146,13 @@ router.post('/generate-qr', verifyToken, isUser, async (req, res) => {
 router.post('/generate-xml', verifyToken, isUser, async (req, res) => {
   try {
     const { stitchingId, invoiceType = 'SIMPLIFIED' } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     
     if (!user.zatcaSettings?.vatNumber) {
       return res.status(400).json({ error: 'ZATCA settings not configured' });
     }
 
-    const stitching = await Stitching.findById(stitchingId).populate('customer');
+    const stitching = await Stitching.findById(stitchingId).populate('customerId');
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching order not found' });
     }
@@ -233,7 +232,7 @@ router.post('/generate-xml', verifyToken, isUser, async (req, res) => {
 router.post('/report-invoice', verifyToken, isUser, async (req, res) => {
   try {
     const { invoiceXml, invoiceHash, uuid } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     const settings = user.zatcaSettings;
 
     if (!settings?.csid || !settings?.csidSecret) {
@@ -310,7 +309,7 @@ router.post('/report-invoice', verifyToken, isUser, async (req, res) => {
 router.post('/clear-invoice', verifyToken, isUser, async (req, res) => {
   try {
     const { invoiceXml, invoiceHash, uuid } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     const settings = user.zatcaSettings;
 
     if (!settings?.productionCsid || !settings?.productionCsidSecret) {
@@ -374,7 +373,7 @@ router.post('/clear-invoice', verifyToken, isUser, async (req, res) => {
 router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res) => {
   try {
     const { csr, otp } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     const settings = user.zatcaSettings || {};
     
     const environment = settings.environment || 'sandbox';
@@ -403,7 +402,7 @@ router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res)
     }
 
     if (responseOk && result.binarySecurityToken && result.secret) {
-      await User.findByIdAndUpdate(req.user.id, {
+      await User.findByIdAndUpdate(req.user._id, {
         'zatcaSettings.csid': result.binarySecurityToken,
         'zatcaSettings.csidSecret': result.secret,
         'zatcaSettings.onboardingStatus': 'COMPLIANCE_CSID_OBTAINED'
@@ -431,7 +430,7 @@ router.post('/onboarding/compliance-csid', verifyToken, isUser, async (req, res)
 router.post('/onboarding/production-csid', verifyToken, isUser, async (req, res) => {
   try {
     const { complianceRequestId } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     const settings = user.zatcaSettings;
 
     if (!settings?.csid || !settings?.csidSecret) {
@@ -466,7 +465,7 @@ router.post('/onboarding/production-csid', verifyToken, isUser, async (req, res)
     }
 
     if (responseOk && result.binarySecurityToken && result.secret) {
-      await User.findByIdAndUpdate(req.user.id, {
+      await User.findByIdAndUpdate(req.user._id, {
         'zatcaSettings.productionCsid': result.binarySecurityToken,
         'zatcaSettings.productionCsidSecret': result.secret,
         'zatcaSettings.onboardingStatus': 'PRODUCTION_READY',
@@ -497,16 +496,16 @@ router.get('/invoices', verifyToken, isUser, async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     
     const stitchings = await Stitching.find({ 
-      user: req.user.id,
+      userId: req.user._id,
       zatcaStatus: { $exists: true }
     })
-    .populate('customer', 'name phone')
+    .populate('customerId', 'name phone')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
 
     const total = await Stitching.countDocuments({ 
-      user: req.user.id,
+      userId: req.user._id,
       zatcaStatus: { $exists: true }
     });
 
@@ -528,7 +527,7 @@ router.get('/invoices', verifyToken, isUser, async (req, res) => {
 // Generate CSR configuration
 router.post('/generate-csr-config', verifyToken, isUser, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = req.user;
     const settings = user.zatcaSettings || {};
     
     const csrConfig = generateCSRConfig({

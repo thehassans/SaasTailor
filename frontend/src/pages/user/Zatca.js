@@ -78,7 +78,7 @@ const Zatca = () => {
 
   const fetchStitchings = async () => {
     try {
-      const response = await api.get('/stitchings?status=delivered&limit=50');
+      const response = await api.get('/stitchings?limit=50');
       setStitchings(response.data.stitchings || []);
     } catch (error) {
       console.error('Error fetching stitchings:', error);

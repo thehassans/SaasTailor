@@ -188,7 +188,7 @@ const Stitchings = () => {
           ${logoSrc ? `<img src="${logoSrc}" class="logo" />` : ''}
           <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
         </div>
-        <div class="receipt-no">#${stitch.receiptNumber}</div>
+        <div class="receipt-no">#${stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A'}</div>
         <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${stitch.customerId?.name || '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('phone')}</span><span class="value">${stitch.customerId?.phone || '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('quantity')}</span><span class="value">${stitch.quantity}</span></div>
