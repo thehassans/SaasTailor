@@ -16,7 +16,13 @@ const stitchingRoutes = require('./routes/stitching');
 const paymentRoutes = require('./routes/payment');
 const settingsRoutes = require('./routes/settings');
 const whatsappRoutes = require('./routes/whatsapp');
-const zatcaRoutes = require('./routes/zatca');
+let zatcaRoutes;
+try {
+  zatcaRoutes = require('./routes/zatca');
+} catch (err) {
+  console.error('Failed to load ZATCA routes:', err.message);
+  zatcaRoutes = null;
+}
 
 const { checkSubscriptions } = require('./utils/subscriptionChecker');
 const { initializeAdmin } = require('./utils/initAdmin');
@@ -59,7 +65,9 @@ app.use('/api/stitchings', stitchingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/zatca', zatcaRoutes);
+if (zatcaRoutes) {
+  app.use('/api/zatca', zatcaRoutes);
+}
 
 // Health check with MongoDB status
 app.get('/api/health', (req, res) => {
