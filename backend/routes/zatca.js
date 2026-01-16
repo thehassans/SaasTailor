@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/User');
 const Stitching = require('../models/Stitching');
@@ -255,38 +256,45 @@ router.post('/report-invoice', authenticateToken, async (req, res) => {
     };
 
     // Make API call to ZATCA
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Language': 'en',
-        'Accept-Version': 'V2',
-        'Authorization': `Basic ${credentials}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    const result = await response.json();
+    let result;
+    let responseOk = false;
+    let responseStatus = 500;
+    try {
+      const response = await axios.post(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Language': 'en',
+          'Accept-Version': 'V2',
+          'Authorization': `Basic ${credentials}`
+        }
+      });
+      result = response.data;
+      responseOk = true;
+      responseStatus = response.status;
+    } catch (axiosError) {
+      result = axiosError.response?.data || { error: axiosError.message };
+      responseStatus = axiosError.response?.status || 500;
+    }
 
     // Store invoice record
     await Stitching.findOneAndUpdate(
       { receiptNumber: req.body.receiptNumber },
       {
-        zatcaStatus: response.ok ? 'REPORTED' : 'FAILED',
+        zatcaStatus: responseOk ? 'REPORTED' : 'FAILED',
         zatcaResponse: result,
         zatcaReportedAt: new Date()
       }
     );
 
-    if (response.ok) {
+    if (responseOk) {
       res.json({
         success: true,
         message: 'Invoice reported successfully',
         result
       });
     } else {
-      res.status(response.status).json({
+      res.status(responseStatus).json({
         success: false,
         message: 'Invoice reporting failed',
         result
@@ -320,22 +328,29 @@ router.post('/clear-invoice', authenticateToken, async (req, res) => {
       invoice: Buffer.from(invoiceXml).toString('base64')
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Language': 'en',
-        'Accept-Version': 'V2',
-        'Authorization': `Basic ${credentials}`,
-        'Clearance-Status': '1'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let result;
+    let responseOk = false;
+    let responseStatus = 500;
+    try {
+      const response = await axios.post(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Language': 'en',
+          'Accept-Version': 'V2',
+          'Authorization': `Basic ${credentials}`,
+          'Clearance-Status': '1'
+        }
+      });
+      result = response.data;
+      responseOk = true;
+      responseStatus = response.status;
+    } catch (axiosError) {
+      result = axiosError.response?.data || { error: axiosError.message };
+      responseStatus = axiosError.response?.status || 500;
+    }
 
-    const result = await response.json();
-
-    if (response.ok) {
+    if (responseOk) {
       res.json({
         success: true,
         message: 'Invoice cleared successfully',
@@ -343,7 +358,7 @@ router.post('/clear-invoice', authenticateToken, async (req, res) => {
         clearedInvoice: result.clearedInvoice ? Buffer.from(result.clearedInvoice, 'base64').toString() : null
       });
     } else {
-      res.status(response.status).json({
+      res.status(responseStatus).json({
         success: false,
         message: 'Invoice clearance failed',
         result
@@ -367,20 +382,27 @@ router.post('/onboarding/compliance-csid', authenticateToken, async (req, res) =
 
     const requestBody = { csr };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Version': 'V2',
-        'OTP': otp
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let result;
+    let responseOk = false;
+    let responseStatus = 400;
+    try {
+      const response = await axios.post(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Version': 'V2',
+          'OTP': otp
+        }
+      });
+      result = response.data;
+      responseOk = true;
+      responseStatus = response.status;
+    } catch (axiosError) {
+      result = axiosError.response?.data || { error: axiosError.message };
+      responseStatus = axiosError.response?.status || 400;
+    }
 
-    const result = await response.json();
-
-    if (response.ok && result.binarySecurityToken && result.secret) {
+    if (responseOk && result.binarySecurityToken && result.secret) {
       await User.findByIdAndUpdate(req.user.id, {
         'zatcaSettings.csid': result.binarySecurityToken,
         'zatcaSettings.csidSecret': result.secret,
@@ -393,7 +415,7 @@ router.post('/onboarding/compliance-csid', authenticateToken, async (req, res) =
         csid: result.binarySecurityToken
       });
     } else {
-      res.status(response.status || 400).json({
+      res.status(responseStatus).json({
         success: false,
         message: 'Failed to obtain Compliance CSID',
         result
@@ -423,20 +445,27 @@ router.post('/onboarding/production-csid', authenticateToken, async (req, res) =
     
     const requestBody = { compliance_request_id: complianceRequestId };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Version': 'V2',
-        'Authorization': `Basic ${credentials}`
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let result;
+    let responseOk = false;
+    let responseStatus = 400;
+    try {
+      const response = await axios.post(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Version': 'V2',
+          'Authorization': `Basic ${credentials}`
+        }
+      });
+      result = response.data;
+      responseOk = true;
+      responseStatus = response.status;
+    } catch (axiosError) {
+      result = axiosError.response?.data || { error: axiosError.message };
+      responseStatus = axiosError.response?.status || 400;
+    }
 
-    const result = await response.json();
-
-    if (response.ok && result.binarySecurityToken && result.secret) {
+    if (responseOk && result.binarySecurityToken && result.secret) {
       await User.findByIdAndUpdate(req.user.id, {
         'zatcaSettings.productionCsid': result.binarySecurityToken,
         'zatcaSettings.productionCsidSecret': result.secret,
@@ -450,7 +479,7 @@ router.post('/onboarding/production-csid', authenticateToken, async (req, res) =
         csid: result.binarySecurityToken
       });
     } else {
-      res.status(response.status || 400).json({
+      res.status(responseStatus).json({
         success: false,
         message: 'Failed to obtain Production CSID',
         result
