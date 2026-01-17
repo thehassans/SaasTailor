@@ -278,6 +278,11 @@
     "customer": "العميل",
     "amount": "المبلغ",
     "status": "الحالة",
-    "date": "التاريخ"
+    "date": "التاريخ",
+    "production": "الإنتاج",
+    "simulation": "المحاكاة",
+    "sandbox": "بيئة الاختبار",
+    "qrCodeGeneration": "إنشاء رمز QR",
+    "integrationReporting": "التكامل والإبلاغ"
   }
 }

@@ -278,6 +278,11 @@
     "customer": "Customer",
     "amount": "Amount",
     "status": "Status",
-    "date": "Date"
+    "date": "Date",
+    "production": "Production",
+    "simulation": "Simulation",
+    "sandbox": "Sandbox",
+    "qrCodeGeneration": "QR Code Generation",
+    "integrationReporting": "Integration & Reporting"
   }
 }

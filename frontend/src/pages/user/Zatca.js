@@ -254,7 +254,7 @@ const Zatca = () => {
               : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
           }`}>
             <Zap className="w-4 h-4" />
-            Phase {settings.phase}
+            {t(`zatca.phase${settings.phase}`)}
           </span>
           <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
             settings.enabled
@@ -370,7 +370,7 @@ const Zatca = () => {
                           : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                       }`}
                     >
-                      {env.charAt(0).toUpperCase() + env.slice(1)}
+                      {t(`zatca.${env}`)}
                     </button>
                   ))}
                 </div>
@@ -391,9 +391,9 @@ const Zatca = () => {
                           : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
                       }`}
                     >
-                      <div className="text-lg font-bold mb-1">Phase {phase}</div>
+                      <div className="text-lg font-bold mb-1">{t(`zatca.phase${phase}`)}</div>
                       <div className="text-xs text-gray-500 dark:text-slate-400">
-                        {phase === 1 ? 'QR Code Generation' : 'Integration & Reporting'}
+                        {phase === 1 ? t('zatca.qrCodeGeneration') : t('zatca.integrationReporting')}
                       </div>
                     </button>
                   ))}
