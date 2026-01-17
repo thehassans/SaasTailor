@@ -281,10 +281,10 @@ const Settings = () => {
               {/* Language */}
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Language</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Language / اللغة</h2>
                 </div>
                 <div className="p-6">
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     {languages.map((lang) => (
                       <button
                         key={lang.code}
@@ -292,11 +292,11 @@ const Settings = () => {
                         className={`p-4 rounded-xl text-center transition-all ${
                           settings.language === lang.code
                             ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
-                            : 'bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-700'
+                            : 'bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-900 dark:text-slate-100'
                         }`}
                       >
                         <span className="text-2xl block mb-1">{lang.flag}</span>
-                        <span className="text-xs font-medium">{lang.label}</span>
+                        <span className="text-xs font-medium block">{lang.label}</span>
                       </button>
                     ))}
                   </div>
