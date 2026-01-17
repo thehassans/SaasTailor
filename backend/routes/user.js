@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Worker = require('../models/Worker');
 const Customer = require('../models/Customer');
@@ -12,10 +13,10 @@ router.use(verifyToken, isUser);
 // Dashboard stats
 router.get('/dashboard', async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = new mongoose.Types.ObjectId(req.user._id);
     
-    const workersCount = await Worker.countDocuments({ userId });
-    const customersCount = await Customer.countDocuments({ userId });
+    const workersCount = await Worker.countDocuments({ userId: req.user._id });
+    const customersCount = await Customer.countDocuments({ userId: req.user._id });
     
     const stitchingStats = await Stitching.aggregate([
       { $match: { userId } },
@@ -33,15 +34,15 @@ router.get('/dashboard', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$price' }, paid: { $sum: '$paidAmount' } } }
     ]);
     
-    const recentStitchings = await Stitching.find({ userId })
+    const recentStitchings = await Stitching.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('customerId', 'name phone')
       .populate('workerId', 'name');
     
-    const pendingStitchings = await Stitching.countDocuments({ userId, status: 'pending' });
-    const inProgressStitchings = await Stitching.countDocuments({ userId, status: 'in_progress' });
-    const completedStitchings = await Stitching.countDocuments({ userId, status: 'completed' });
+    const pendingStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['pending', 'assigned'] } });
+    const inProgressStitchings = await Stitching.countDocuments({ userId: req.user._id, status: 'in_progress' });
+    const completedStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['completed', 'delivered'] } });
     
     const workerPayments = await Payment.aggregate([
       { $match: { userId } },
