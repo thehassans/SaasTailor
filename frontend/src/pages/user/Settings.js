@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { Card, CardBody } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Settings as SettingsIcon, Upload, Globe, LayoutDashboard, Users, Wallet, UserPlus, Scissors, Heart, MessageCircle, Eye, EyeOff, Palette } from 'lucide-react';
+import { 
+  Settings as SettingsIcon, Upload, Globe, Sun, Moon, 
+  Shield, Download, Bell, Database, ChevronRight, 
+  Check, Smartphone, Mail, Lock, Key, Trash2,
+  FileText, HelpCircle, Info
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { api, user, updateUser } = useAuth();
+  const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(false);
   const [logoPreview, setLogoPreview] = useState(user?.logo || null);
   const [settings, setSettings] = useState({
@@ -20,68 +23,44 @@ const Settings = () => {
     logo: null,
     businessName: user?.businessName || '',
     labelLanguage: user?.labelLanguage || 'both',
-    // Theme customization
     primaryColor: user?.primaryColor || 'sky',
-    navStyle: user?.navStyle || 'default',
-    headerStyle: user?.headerStyle || 'default',
-    sidebarStyle: user?.sidebarStyle || 'default'
+    notifications: {
+      orderUpdates: true,
+      paymentReminders: true,
+      weeklyReport: false,
+      sound: true
+    }
   });
 
-  // Color presets for primary color
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+
   const colorPresets = [
-    { name: 'sky', label: 'Sky Blue', colors: { bg: 'bg-sky-500', hover: 'hover:bg-sky-600', light: 'bg-sky-100', text: 'text-sky-600' } },
-    { name: 'indigo', label: 'Indigo', colors: { bg: 'bg-indigo-500', hover: 'hover:bg-indigo-600', light: 'bg-indigo-100', text: 'text-indigo-600' } },
-    { name: 'violet', label: 'Violet', colors: { bg: 'bg-violet-500', hover: 'hover:bg-violet-600', light: 'bg-violet-100', text: 'text-violet-600' } },
-    { name: 'rose', label: 'Rose', colors: { bg: 'bg-rose-500', hover: 'hover:bg-rose-600', light: 'bg-rose-100', text: 'text-rose-600' } },
-    { name: 'emerald', label: 'Emerald', colors: { bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', light: 'bg-emerald-100', text: 'text-emerald-600' } },
-    { name: 'amber', label: 'Amber', colors: { bg: 'bg-amber-500', hover: 'hover:bg-amber-600', light: 'bg-amber-100', text: 'text-amber-600' } },
-    { name: 'slate', label: 'Slate', colors: { bg: 'bg-slate-600', hover: 'hover:bg-slate-700', light: 'bg-slate-100', text: 'text-slate-600' } },
-    { name: 'teal', label: 'Teal', colors: { bg: 'bg-teal-500', hover: 'hover:bg-teal-600', light: 'bg-teal-100', text: 'text-teal-600' } }
+    { name: 'sky', color: '#0ea5e9' },
+    { name: 'indigo', color: '#6366f1' },
+    { name: 'violet', color: '#8b5cf6' },
+    { name: 'rose', color: '#f43f5e' },
+    { name: 'emerald', color: '#10b981' },
+    { name: 'amber', color: '#f59e0b' },
   ];
 
-  const navStyles = [
-    { value: 'default', label: 'Default', desc: 'Standard sidebar with icons and labels' },
-    { value: 'compact', label: 'Compact', desc: 'Smaller padding, condensed view' },
-    { value: 'pill', label: 'Pill Style', desc: 'Rounded pill-shaped nav items' },
-    { value: 'minimal', label: 'Minimal', desc: 'Clean, borderless design' }
+  const languages = [
+    { code: 'en', label: 'English', flag: '🇺🇸' },
+    { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+    { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
+    { code: 'ur', label: 'اردو', flag: '🇵🇰' },
+    { code: 'bn', label: 'বাংলা', flag: '🇧🇩' }
   ];
 
-  const headerStyles = [
-    { value: 'default', label: 'Default', desc: 'Standard white/dark header' },
-    { value: 'colored', label: 'Colored', desc: 'Uses your primary color' },
-    { value: 'gradient', label: 'Gradient', desc: 'Beautiful gradient effect' },
-    { value: 'transparent', label: 'Transparent', desc: 'Blends with content' }
+  const sections = [
+    { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'appearance', label: 'Appearance', icon: Sun },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'data', label: 'Data & Backup', icon: Database },
+    { id: 'about', label: 'About', icon: Info },
   ];
 
-  const sidebarStyles = [
-    { value: 'default', label: 'Default', desc: 'Standard white/dark sidebar' },
-    { value: 'colored', label: 'Colored', desc: 'Uses your primary color' },
-    { value: 'dark', label: 'Always Dark', desc: 'Dark sidebar regardless of theme' },
-    { value: 'glass', label: 'Glass Effect', desc: 'Semi-transparent backdrop' }
-  ];
-  const [hiddenNavItems, setHiddenNavItems] = useState(user?.hiddenNavItems || []);
-
-  const navItemsList = [
-    { key: 'dashboard', icon: LayoutDashboard, label: t('nav.dashboard'), required: true },
-    { key: 'workers', icon: Users, label: t('nav.workers') },
-    { key: 'workerAmounts', icon: Wallet, label: t('nav.workerAmounts') },
-    { key: 'customers', icon: UserPlus, label: t('nav.customers') },
-    { key: 'stitchings', icon: Scissors, label: t('nav.stitchings') },
-    { key: 'loyalty', icon: Heart, label: t('nav.loyalty') },
-    { key: 'whatsapp', icon: MessageCircle, label: t('nav.whatsapp') }
-  ];
-
-  const toggleNavItem = (key) => {
-    if (hiddenNavItems.includes(key)) {
-      setHiddenNavItems(hiddenNavItems.filter(k => k !== key));
-    } else {
-      setHiddenNavItems([...hiddenNavItems, key]);
-    }
-  };
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  useEffect(() => { fetchSettings(); }, []);
 
   const fetchSettings = async () => {
     try {
@@ -92,13 +71,10 @@ const Settings = () => {
         theme: response.data.settings.theme || prev.theme || user?.theme || 'light',
         receiptPrefix: response.data.settings.receiptPrefix,
         receiptCounter: response.data.settings.receiptCounter,
-        logo: null,
         businessName: response.data.settings.businessName || user?.businessName || ''
       }));
       if (response.data.settings.logo && response.data.settings.logo !== 'null') {
         setLogoPreview(response.data.settings.logo);
-      } else {
-        setLogoPreview(null);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -111,25 +87,6 @@ const Settings = () => {
       setSettings({ ...settings, logo: file });
       setLogoPreview(URL.createObjectURL(file));
     }
-  };
-
-  const handleLanguageChange = async (lang) => {
-    setSettings({ ...settings, language: lang });
-    i18n.changeLanguage(lang);
-  };
-
-  // Live update theme settings
-  const handleThemeChange = (key, value) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    // Apply immediately
-    updateUser({
-      theme: newSettings.theme,
-      primaryColor: newSettings.primaryColor,
-      navStyle: newSettings.navStyle,
-      headerStyle: newSettings.headerStyle,
-      sidebarStyle: newSettings.sidebarStyle
-    });
   };
 
   const handleSave = async () => {
@@ -150,13 +107,8 @@ const Settings = () => {
         language: settings.language, 
         theme: settings.theme, 
         businessName: settings.businessName, 
-        logo: logoPreview, 
-        hiddenNavItems, 
-        labelLanguage: settings.labelLanguage,
-        primaryColor: settings.primaryColor,
-        navStyle: settings.navStyle,
-        headerStyle: settings.headerStyle,
-        sidebarStyle: settings.sidebarStyle
+        logo: logoPreview,
+        primaryColor: settings.primaryColor
       });
       toast.success(t('settings.saved'));
     } catch (error) {
@@ -165,411 +117,411 @@ const Settings = () => {
     setLoading(false);
   };
 
-  const handleReceiptSave = async () => {
+  const handleExportData = async () => {
     try {
-      await api.put('/settings/receipt', {
-        receiptPrefix: settings.receiptPrefix,
-        receiptCounter: settings.receiptCounter
-      });
-      toast.success(t('settings.saved'));
+      toast.loading('Preparing export...');
+      const response = await api.get('/settings/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `backup-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.dismiss();
+      toast.success('Data exported successfully');
     } catch (error) {
-      toast.error('Failed to save');
+      toast.dismiss();
+      toast.error('Export failed');
     }
   };
 
-  const languages = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'ar', label: 'العربية', flag: '🇸🇦' },
-    { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-    { code: 'ur', label: 'اردو', flag: '🇵🇰' },
-    { code: 'bn', label: 'বাংলা', flag: '🇧🇩' }
-  ];
+  const handlePasswordChange = async () => {
+    if (passwordData.new !== passwordData.confirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (passwordData.new.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      await api.put('/settings/password', {
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new
+      });
+      toast.success('Password updated successfully');
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to update password');
+    }
+  };
+
+  const Toggle = ({ enabled, onChange }) => (
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`relative w-11 h-6 rounded-full transition-colors ${
+        enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-slate-600'
+      }`}
+    >
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+        enabled ? 'translate-x-5' : 'translate-x-0'
+      }`} />
+    </button>
+  );
+
+  const SettingRow = ({ icon: Icon, title, description, children, onClick }) => (
+    <div 
+      onClick={onClick}
+      className={`flex items-center gap-4 p-4 ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50' : ''} transition-colors`}
+    >
+      <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5 text-gray-600 dark:text-slate-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-gray-900 dark:text-slate-100">{title}</p>
+        {description && <p className="text-sm text-gray-500 dark:text-slate-400 truncate">{description}</p>}
+      </div>
+      {children || (onClick && <ChevronRight className="w-5 h-5 text-gray-400" />)}
+    </div>
+  );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="w-8 h-8 text-gray-400 dark:text-slate-400" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('settings.title')}</h1>
+    <div className="max-w-4xl mx-auto animate-fadeIn">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <p className="text-gray-500 dark:text-slate-400 mt-1">Manage your account preferences</p>
       </div>
 
-      {/* Business Info */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">Business Information</h2>
-        </div>
-        <CardBody>
-          <div className="space-y-6">
-            {/* Logo */}
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-slate-800/60 rounded-xl flex items-center justify-center overflow-hidden">
-                {logoPreview && logoPreview !== 'null' && logoPreview !== 'undefined' ? (
-                  <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
-                ) : (
-                  <Upload className="w-6 h-6 text-gray-400 dark:text-slate-400" />
-                )}
-              </div>
-              <div>
-                <label className="cursor-pointer">
-                  <span className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-100 transition-colors">
-                    {t('settings.uploadLogo')}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Business Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                {t('settings.businessName')}
-              </label>
-              <input
-                type="text"
-                value={settings.businessName}
-                onChange={(e) => setSettings({ ...settings, businessName: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your business name"
-              />
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Ultra Premium Theme Customization */}
-      <Card className="overflow-hidden">
-        <div className="relative px-6 py-5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyem0tNiA2aC00djJoNHYtMnptMC02di00aC00djRoNHptLTYgNmgtNHYyaDR2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
-          <div className="relative flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <Palette className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Theme Studio</h2>
-              <p className="text-white/70 text-sm">Customize your experience in real-time</p>
-            </div>
-          </div>
-          <div className="absolute top-2 right-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">
-            <span className="text-xs font-semibold text-white">✨ LIVE</span>
-          </div>
-        </div>
-        
-        <CardBody className="space-y-8">
-          {/* Mode Toggle */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center text-white text-xs">🌓</span>
-              Appearance Mode
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleThemeChange('theme', 'light')}
-                className={`relative p-5 rounded-2xl border-2 transition-all group overflow-hidden ${
-                  settings.theme === 'light'
-                    ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 shadow-lg shadow-amber-500/20'
-                    : 'border-gray-200 hover:border-amber-300 dark:border-slate-700 dark:hover:border-amber-600 bg-white dark:bg-slate-800'
-                }`}
-              >
-                <div className="text-4xl mb-3">☀️</div>
-                <span className="font-bold text-gray-900 dark:text-slate-100">Light Mode</span>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Clean & bright</p>
-                {settings.theme === 'light' && (
-                  <div className="absolute top-3 right-3 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => handleThemeChange('theme', 'dark')}
-                className={`relative p-5 rounded-2xl border-2 transition-all group overflow-hidden ${
-                  settings.theme === 'dark'
-                    ? 'border-indigo-400 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 shadow-lg shadow-indigo-500/20'
-                    : 'border-gray-200 hover:border-indigo-300 dark:border-slate-700 dark:hover:border-indigo-600 bg-white dark:bg-slate-800'
-                }`}
-              >
-                <div className="text-4xl mb-3">🌙</div>
-                <span className="font-bold text-gray-900 dark:text-slate-100">Dark Mode</span>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Easy on the eyes</p>
-                {settings.theme === 'dark' && (
-                  <div className="absolute top-3 right-3 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Accent Color */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg"></span>
-              Accent Color
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {colorPresets.map((color) => (
-                <button
-                  key={color.name}
-                  onClick={() => handleThemeChange('primaryColor', color.name)}
-                  className={`group relative w-12 h-12 rounded-2xl ${color.colors.bg} transition-all hover:scale-110 hover:shadow-xl ${
-                    settings.primaryColor === color.name 
-                      ? 'ring-4 ring-offset-4 ring-offset-white dark:ring-offset-slate-900 ring-gray-900 dark:ring-white scale-110 shadow-xl' 
-                      : 'shadow-lg'
-                  }`}
-                  title={color.label}
-                >
-                  {settings.primaryColor === color.name && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-3">
-              Active: <span className="font-semibold">{colorPresets.find(c => c.name === settings.primaryColor)?.label}</span>
-            </p>
-          </div>
-
-          {/* Sidebar Style */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="w-3.5 h-3.5 text-white" />
-              </span>
-              Sidebar Style
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {sidebarStyles.map((style) => (
-                <button
-                  key={style.value}
-                  onClick={() => handleThemeChange('sidebarStyle', style.value)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    settings.sidebarStyle === style.value
-                      ? 'border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 shadow-lg shadow-cyan-500/10'
-                      : 'border-gray-200 hover:border-cyan-300 dark:border-slate-700 dark:hover:border-cyan-600'
-                  }`}
-                >
-                  <span className={`text-sm font-bold block mb-1 ${
-                    settings.sidebarStyle === style.value ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-900 dark:text-slate-100'
-                  }`}>
-                    {style.label}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">{style.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Header Style */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="w-3.5 h-3.5 text-white" />
-              </span>
-              Header Style
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {headerStyles.map((style) => (
-                <button
-                  key={style.value}
-                  onClick={() => handleThemeChange('headerStyle', style.value)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    settings.headerStyle === style.value
-                      ? 'border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg shadow-emerald-500/10'
-                      : 'border-gray-200 hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-600'
-                  }`}
-                >
-                  <span className={`text-sm font-bold block mb-1 ${
-                    settings.headerStyle === style.value ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-slate-100'
-                  }`}>
-                    {style.label}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">{style.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Navigation Style */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="w-3.5 h-3.5 text-white" />
-              </span>
-              Navigation Style
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {navStyles.map((style) => (
-                <button
-                  key={style.value}
-                  onClick={() => handleThemeChange('navStyle', style.value)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    settings.navStyle === style.value
-                      ? 'border-violet-500 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 shadow-lg shadow-violet-500/10'
-                      : 'border-gray-200 hover:border-violet-300 dark:border-slate-700 dark:hover:border-violet-600'
-                  }`}
-                >
-                  <span className={`text-sm font-bold block mb-1 ${
-                    settings.navStyle === style.value ? 'text-violet-700 dark:text-violet-300' : 'text-gray-900 dark:text-slate-100'
-                  }`}>
-                    {style.label}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">{style.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Language */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2">
-          <Globe className="w-5 h-5 text-gray-400 dark:text-slate-400" />
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('settings.language')}</h2>
-        </div>
-        <CardBody>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => handleLanguageChange(lang.code)}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  settings.language === lang.code
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="text-2xl mb-1 block">{lang.flag}</span>
-                <span className={`text-sm font-medium ${
-                  settings.language === lang.code ? 'text-primary-700 dark:text-primary-200' : 'text-gray-700 dark:text-slate-200'
-                }`}>
-                  {lang.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Navigation Customization */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2">
-          <LayoutDashboard className="w-5 h-5 text-gray-400 dark:text-slate-400" />
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">Navigation Menu</h2>
-        </div>
-        <CardBody>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">Show or hide menu items in the sidebar navigation</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {navItemsList.map((item) => {
-              const isHidden = hiddenNavItems.includes(item.key);
-              const Icon = item.icon;
+      <div className="flex gap-8">
+        {/* Sidebar Navigation */}
+        <div className="w-56 flex-shrink-0 hidden lg:block">
+          <nav className="space-y-1 sticky top-6">
+            {sections.map((section) => {
+              const Icon = section.icon;
               return (
                 <button
-                  key={item.key}
-                  onClick={() => !item.required && toggleNavItem(item.key)}
-                  disabled={item.required}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                    item.required
-                      ? 'border-gray-100 bg-gray-50 dark:border-slate-800 dark:bg-slate-800/40 cursor-not-allowed opacity-60'
-                      : isHidden
-                        ? 'border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-900 hover:border-gray-300 dark:hover:border-slate-600'
-                        : 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
+                    activeSection === section.id
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+                      : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isHidden ? 'text-gray-400 dark:text-slate-400' : 'text-primary-600 dark:text-primary-300'}`} />
-                  <span className={`flex-1 text-left text-sm font-medium ${isHidden ? 'text-gray-500 dark:text-slate-400' : 'text-gray-900 dark:text-slate-100'}`}>
-                    {item.label}
-                  </span>
-                  {item.required ? (
-                    <span className="text-xs text-gray-400 dark:text-slate-400">Required</span>
-                  ) : isHidden ? (
-                    <EyeOff className="w-4 h-4 text-gray-400 dark:text-slate-400" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-primary-600 dark:text-primary-300" />
-                  )}
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{section.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Mobile Section Tabs */}
+          <div className="lg:hidden mb-6 flex gap-2 overflow-x-auto pb-2">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+                    activeSection === section.id
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{section.label}</span>
                 </button>
               );
             })}
           </div>
-        </CardBody>
-      </Card>
 
-      {/* Print Label Language */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2">
-          <Globe className="w-5 h-5 text-gray-400 dark:text-slate-400" />
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">Print Label Language</h2>
-        </div>
-        <CardBody>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">Choose the language for printed order labels</p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'en', label: 'English Only', icon: '🇺🇸' },
-              { value: 'ar', label: 'Arabic Only / عربي فقط', icon: '🇸🇦' },
-              { value: 'both', label: 'Both / كلاهما', icon: '🌍' }
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSettings({ ...settings, labelLanguage: option.value })}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  settings.labelLanguage === option.value
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="text-2xl mb-2 block">{option.icon}</span>
-                <span className={`text-sm font-medium ${
-                  settings.labelLanguage === option.value ? 'text-primary-700 dark:text-primary-200' : 'text-gray-700 dark:text-slate-200'
-                }`}>
-                  {option.label}
-                </span>
-              </button>
-            ))}
+          {/* General Section */}
+          {activeSection === 'general' && (
+            <div className="space-y-6">
+              {/* Business Profile */}
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Business Profile</h2>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center overflow-hidden">
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <Upload className="w-6 h-6 text-gray-400" />
+                        )}
+                      </div>
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 rounded-2xl cursor-pointer transition-opacity">
+                        <Upload className="w-5 h-5 text-white" />
+                        <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Business Name</label>
+                      <input
+                        type="text"
+                        value={settings.businessName}
+                        onChange={(e) => setSettings({ ...settings, businessName: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                        placeholder="Your business name"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Language */}
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Language</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-5 gap-3">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => { setSettings({ ...settings, language: lang.code }); i18n.changeLanguage(lang.code); }}
+                        className={`p-4 rounded-xl text-center transition-all ${
+                          settings.language === lang.code
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+                            : 'bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span className="text-2xl block mb-1">{lang.flag}</span>
+                        <span className="text-xs font-medium">{lang.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Receipt Settings */}
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Receipt Settings</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Prefix</label>
+                      <input
+                        type="text"
+                        value={settings.receiptPrefix}
+                        onChange={(e) => setSettings({ ...settings, receiptPrefix: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
+                        placeholder="RCP"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Counter</label>
+                      <input
+                        type="number"
+                        value={settings.receiptCounter}
+                        onChange={(e) => setSettings({ ...settings, receiptCounter: parseInt(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Appearance Section */}
+          {activeSection === 'appearance' && (
+            <div className="space-y-6">
+              {/* Theme Mode */}
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Theme Mode</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => { setSettings({ ...settings, theme: 'light' }); updateUser({ theme: 'light' }); }}
+                      className={`p-6 rounded-2xl border-2 transition-all ${
+                        settings.theme === 'light'
+                          ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                          : 'border-gray-200 dark:border-slate-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Sun className={`w-8 h-8 mx-auto mb-3 ${settings.theme === 'light' ? 'text-amber-500' : 'text-gray-400'}`} />
+                      <span className="font-semibold text-gray-900 dark:text-white block">Light</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Clean & bright</span>
+                      {settings.theme === 'light' && <Check className="w-5 h-5 text-amber-500 mx-auto mt-2" />}
+                    </button>
+                    <button
+                      onClick={() => { setSettings({ ...settings, theme: 'dark' }); updateUser({ theme: 'dark' }); }}
+                      className={`p-6 rounded-2xl border-2 transition-all ${
+                        settings.theme === 'dark'
+                          ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-slate-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Moon className={`w-8 h-8 mx-auto mb-3 ${settings.theme === 'dark' ? 'text-indigo-500' : 'text-gray-400'}`} />
+                      <span className="font-semibold text-gray-900 dark:text-white block">Dark</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Easy on eyes</span>
+                      {settings.theme === 'dark' && <Check className="w-5 h-5 text-indigo-500 mx-auto mt-2" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accent Color */}
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Accent Color</h2>
+                </div>
+                <div className="p-6">
+                  <div className="flex gap-4">
+                    {colorPresets.map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => { setSettings({ ...settings, primaryColor: preset.name }); updateUser({ primaryColor: preset.name }); }}
+                        className={`w-12 h-12 rounded-full transition-all ${
+                          settings.primaryColor === preset.name ? 'ring-4 ring-offset-4 ring-gray-900 dark:ring-white dark:ring-offset-slate-900 scale-110' : 'hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: preset.color }}
+                      >
+                        {settings.primaryColor === preset.name && <Check className="w-5 h-5 text-white mx-auto" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notifications Section */}
+          {activeSection === 'notifications' && (
+            <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Preferences</h2>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-slate-700">
+                <SettingRow icon={Bell} title="Order Updates" description="Get notified when order status changes">
+                  <Toggle enabled={settings.notifications.orderUpdates} onChange={(v) => setSettings({...settings, notifications: {...settings.notifications, orderUpdates: v}})} />
+                </SettingRow>
+                <SettingRow icon={Mail} title="Payment Reminders" description="Reminders for pending payments">
+                  <Toggle enabled={settings.notifications.paymentReminders} onChange={(v) => setSettings({...settings, notifications: {...settings.notifications, paymentReminders: v}})} />
+                </SettingRow>
+                <SettingRow icon={FileText} title="Weekly Reports" description="Receive weekly business summary">
+                  <Toggle enabled={settings.notifications.weeklyReport} onChange={(v) => setSettings({...settings, notifications: {...settings.notifications, weeklyReport: v}})} />
+                </SettingRow>
+                <SettingRow icon={Smartphone} title="Sound Effects" description="Play sounds for notifications">
+                  <Toggle enabled={settings.notifications.sound} onChange={(v) => setSettings({...settings, notifications: {...settings.notifications, sound: v}})} />
+                </SettingRow>
+              </div>
+            </div>
+          )}
+
+          {/* Security Section */}
+          {activeSection === 'security' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Current Password</label>
+                    <input
+                      type="password"
+                      value={passwordData.current}
+                      onChange={(e) => setPasswordData({...passwordData, current: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">New Password</label>
+                    <input
+                      type="password"
+                      value={passwordData.new}
+                      onChange={(e) => setPasswordData({...passwordData, new: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={passwordData.confirm}
+                      onChange={(e) => setPasswordData({...passwordData, confirm: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
+                    />
+                  </div>
+                  <button
+                    onClick={handlePasswordChange}
+                    className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Update Password
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Data Section */}
+          {activeSection === 'data' && (
+            <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Data Management</h2>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-slate-700">
+                <SettingRow icon={Download} title="Export Data" description="Download all your data as JSON" onClick={handleExportData} />
+                <SettingRow icon={Database} title="Storage Used" description="Calculate your storage usage">
+                  <span className="text-sm text-gray-500">— MB</span>
+                </SettingRow>
+                <SettingRow icon={Trash2} title="Clear Cache" description="Clear temporary app data" onClick={() => { localStorage.clear(); toast.success('Cache cleared'); }} />
+              </div>
+            </div>
+          )}
+
+          {/* About Section */}
+          {activeSection === 'about' && (
+            <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">About KhayyatOS</h2>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-slate-700">
+                <SettingRow icon={Info} title="Version" description="Current app version">
+                  <span className="text-sm font-mono text-gray-500">v2.0.0</span>
+                </SettingRow>
+                <SettingRow icon={HelpCircle} title="Help & Support" description="Get help with the app" onClick={() => window.open('mailto:support@khayyatos.com')} />
+                <SettingRow icon={FileText} title="Terms of Service" description="Read our terms" onClick={() => {}} />
+                <SettingRow icon={Shield} title="Privacy Policy" description="How we protect your data" onClick={() => {}} />
+              </div>
+              <div className="p-6 text-center text-sm text-gray-500 dark:text-slate-400">
+                Made with ❤️ for tailors everywhere
+              </div>
+            </div>
+          )}
+
+          {/* Save Button */}
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Check className="w-5 h-5" />
+              )}
+              Save Changes
+            </button>
           </div>
-        </CardBody>
-      </Card>
-
-      {/* Receipt Settings */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('settings.receiptSettings')}</h2>
         </div>
-        <CardBody>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t('settings.receiptPrefix')}
-              value={settings.receiptPrefix}
-              onChange={(e) => setSettings({ ...settings, receiptPrefix: e.target.value })}
-              placeholder="RCP"
-            />
-            <Input
-              label={t('settings.receiptCounter')}
-              type="number"
-              value={settings.receiptCounter}
-              onChange={(e) => setSettings({ ...settings, receiptCounter: parseInt(e.target.value) || 0 })}
-            />
-          </div>
-          <Button onClick={handleReceiptSave} variant="secondary" className="mt-4">
-            {t('common.save')} Receipt Settings
-          </Button>
-        </CardBody>
-      </Card>
-
-      {/* Save Button */}
-      <Button onClick={handleSave} loading={loading} className="w-full">
-        {t('common.save')} {t('settings.title')}
-      </Button>
+      </div>
     </div>
   );
 };

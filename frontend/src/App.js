@@ -1,44 +1,56 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DashboardSkeleton, PageSkeleton, FormSkeleton } from './components/ui/Skeleton';
 
-// Layouts
+// Layouts - Keep these as regular imports for instant shell
 import AdminLayout from './layouts/AdminLayout';
 import UserLayout from './layouts/UserLayout';
 import WorkerLayout from './layouts/WorkerLayout';
 
-// Auth Pages
+// Auth Pages - Keep login fast
 import LoginPage from './pages/auth/LoginPage';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminUsers from './pages/admin/Users';
-import AdminUserForm from './pages/admin/UserForm';
+// Lazy load all other pages for faster initial load
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminUserForm = lazy(() => import('./pages/admin/UserForm'));
 
-// User Pages
-import UserDashboard from './pages/user/Dashboard';
-import Workers from './pages/user/Workers';
-import WorkerForm from './pages/user/WorkerForm';
-import WorkerAmounts from './pages/user/WorkerAmounts';
-import Customers from './pages/user/Customers';
-import CustomerForm from './pages/user/CustomerForm';
-import Stitchings from './pages/user/Stitchings';
-import StitchingForm from './pages/user/StitchingForm';
-import Loyalty from './pages/user/Loyalty';
-import WhatsApp from './pages/user/WhatsApp';
-import Zatca from './pages/user/Zatca';
-import Settings from './pages/user/Settings';
+const UserDashboard = lazy(() => import('./pages/user/Dashboard'));
+const Workers = lazy(() => import('./pages/user/Workers'));
+const WorkerForm = lazy(() => import('./pages/user/WorkerForm'));
+const WorkerAmounts = lazy(() => import('./pages/user/WorkerAmounts'));
+const Customers = lazy(() => import('./pages/user/Customers'));
+const CustomerForm = lazy(() => import('./pages/user/CustomerForm'));
+const Stitchings = lazy(() => import('./pages/user/Stitchings'));
+const StitchingForm = lazy(() => import('./pages/user/StitchingForm'));
+const Loyalty = lazy(() => import('./pages/user/Loyalty'));
+const WhatsApp = lazy(() => import('./pages/user/WhatsApp'));
+const Zatca = lazy(() => import('./pages/user/Zatca'));
+const Settings = lazy(() => import('./pages/user/Settings'));
 
-// Worker Pages
-import WorkerDashboard from './pages/worker/Dashboard';
-import WorkerStitchings from './pages/worker/Stitchings';
-import WorkerAmountsPage from './pages/worker/Amounts';
-import WorkerSettings from './pages/worker/Settings';
+const WorkerDashboard = lazy(() => import('./pages/worker/Dashboard'));
+const WorkerStitchings = lazy(() => import('./pages/worker/Stitchings'));
+const WorkerAmountsPage = lazy(() => import('./pages/worker/Amounts'));
+const WorkerSettings = lazy(() => import('./pages/worker/Settings'));
 
-// Public Pages
-import TrackOrder from './pages/public/TrackOrder';
+const TrackOrder = lazy(() => import('./pages/public/TrackOrder'));
+
+// Loading wrapper for lazy components
+const LazyPage = ({ children, skeleton = 'page' }) => {
+  const skeletons = {
+    dashboard: <DashboardSkeleton />,
+    page: <PageSkeleton />,
+    form: <FormSkeleton />
+  };
+  return (
+    <Suspense fallback={skeletons[skeleton] || skeletons.page}>
+      {children}
+    </Suspense>
+  );
+};
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -70,7 +82,7 @@ const AppRoutes = () => {
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <Routes>
         {/* Public Routes */}
-        <Route path="/track-order" element={<TrackOrder />} />
+        <Route path="/track-order" element={<LazyPage><TrackOrder /></LazyPage>} />
         
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -83,10 +95,10 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="users/new" element={<AdminUserForm />} />
-          <Route path="users/:id/edit" element={<AdminUserForm />} />
+          <Route path="dashboard" element={<LazyPage skeleton="dashboard"><AdminDashboard /></LazyPage>} />
+          <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
+          <Route path="users/new" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
+          <Route path="users/:id/edit" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
         </Route>
 
         {/* User Routes */}
@@ -96,21 +108,21 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/user/dashboard" replace />} />
-          <Route path="dashboard" element={<UserDashboard />} />
-          <Route path="workers" element={<Workers />} />
-          <Route path="workers/new" element={<WorkerForm />} />
-          <Route path="workers/:id/edit" element={<WorkerForm />} />
-          <Route path="worker-amounts" element={<WorkerAmounts />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="customers/new" element={<CustomerForm />} />
-          <Route path="customers/:id/edit" element={<CustomerForm />} />
-          <Route path="stitchings" element={<Stitchings />} />
-          <Route path="stitchings/new" element={<StitchingForm />} />
-          <Route path="stitchings/:id/edit" element={<StitchingForm />} />
-          <Route path="loyalty" element={<Loyalty />} />
-          <Route path="whatsapp" element={<WhatsApp />} />
-          <Route path="zatca" element={<Zatca />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="dashboard" element={<LazyPage skeleton="dashboard"><UserDashboard /></LazyPage>} />
+          <Route path="workers" element={<LazyPage><Workers /></LazyPage>} />
+          <Route path="workers/new" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
+          <Route path="workers/:id/edit" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
+          <Route path="worker-amounts" element={<LazyPage><WorkerAmounts /></LazyPage>} />
+          <Route path="customers" element={<LazyPage><Customers /></LazyPage>} />
+          <Route path="customers/new" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />
+          <Route path="customers/:id/edit" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />
+          <Route path="stitchings" element={<LazyPage><Stitchings /></LazyPage>} />
+          <Route path="stitchings/new" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />
+          <Route path="stitchings/:id/edit" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />
+          <Route path="loyalty" element={<LazyPage><Loyalty /></LazyPage>} />
+          <Route path="whatsapp" element={<LazyPage><WhatsApp /></LazyPage>} />
+          <Route path="zatca" element={<LazyPage><Zatca /></LazyPage>} />
+          <Route path="settings" element={<LazyPage skeleton="form"><Settings /></LazyPage>} />
         </Route>
 
         {/* Worker Routes */}
@@ -120,10 +132,10 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/worker/dashboard" replace />} />
-          <Route path="dashboard" element={<WorkerDashboard />} />
-          <Route path="stitchings" element={<WorkerStitchings />} />
-          <Route path="amounts" element={<WorkerAmountsPage />} />
-          <Route path="settings" element={<WorkerSettings />} />
+          <Route path="dashboard" element={<LazyPage skeleton="dashboard"><WorkerDashboard /></LazyPage>} />
+          <Route path="stitchings" element={<LazyPage><WorkerStitchings /></LazyPage>} />
+          <Route path="amounts" element={<LazyPage><WorkerAmountsPage /></LazyPage>} />
+          <Route path="settings" element={<LazyPage skeleton="form"><WorkerSettings /></LazyPage>} />
         </Route>
 
         {/* Catch all */}
